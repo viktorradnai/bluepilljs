@@ -45,9 +45,9 @@ static const uint8_t hid_device_descriptor_data[] = {
                          0x0483,        /* idVendor: STMicroelectronics).                                               */
                          0x5710,        /* idProduct: Joystick in FS Mode                                               */
                          0x0100,        /* bcdDevice. Device Version Number assigned by the developer                   */
-                         0x00,             /* iManufacturer.                                                            */
-                         0x00,             /* iProduct.                                                                 */
-                         0x00,             /* iSerialNumber.                                                            */
+                         0x01,             /* iManufacturer.                                                            */
+                         0x02,             /* iProduct.                                                                 */
+                         0x03,             /* iSerialNumber.                                                            */
                          0x01)             /* bNumConfigurations. The system has only one configuration                 */
 };
 
