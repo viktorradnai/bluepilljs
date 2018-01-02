@@ -35,3 +35,8 @@
 # ignore folders
 build/*
 .dep/*
+
+# Temp files
+*.tmp
+*.bak*
+.*.sw?

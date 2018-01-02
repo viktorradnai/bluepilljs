@@ -98,7 +98,6 @@ include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 # Other files (optional).
-include $(CHIBIOS)/test/rt/test.mk
 
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD)/STM32F103xB.ld
@@ -112,11 +111,10 @@ CSRC = $(STARTUPSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       $(TESTSRC) \
        $(CHIBIOS)/os/various/shell.c \
        $(CHIBIOS)/os/hal/lib/streams/memstreams.c \
        $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
-      usbcfg.c usb_hid.c main.c
+       usbcfg.c usb_hid.c cmd.c mag.c main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -203,7 +201,7 @@ UDEFS =
 UADEFS =
 
 # List all user directories here
-UINCDIR =
+UINCDIR = $(PWD)
 
 # List the user directory to look for the libraries here
 ULIBDIR =

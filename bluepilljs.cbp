@@ -61,8 +61,17 @@
 			<Add option="-Wall" />
 		</Compiler>
 		<Unit filename="Makefile" />
+		<Unit filename="board.h" />
 		<Unit filename="chconf.h" />
+		<Unit filename="cmd.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="cmd.h" />
 		<Unit filename="halconf.h" />
+		<Unit filename="mag.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="mag.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -78,11 +87,11 @@
 		<Extensions>
 			<code_completion />
 			<debugger>
-				<remote_debugging target="Debug">
-					<options conn_type="0" serial_baud="115200" ip_address="localhost" ip_port="4242" additional_cmds_before="monitor reset halt" />
-				</remote_debugging>
 				<remote_debugging target="Release">
 					<options conn_type="0" serial_baud="115200" ip_address="localhost" ip_port="3333" additional_cmds_before="monitor reset halt" extended_remote="1" />
+				</remote_debugging>
+				<remote_debugging target="Debug">
+					<options conn_type="0" serial_baud="115200" ip_address="localhost" ip_port="4242" additional_cmds_before="monitor reset halt" />
 				</remote_debugging>
 			</debugger>
 		</Extensions>

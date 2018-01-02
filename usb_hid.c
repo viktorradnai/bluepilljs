@@ -37,8 +37,6 @@ void hid_receive(USBDriver *usbp) {
 }
 
 void hid_transmit(USBDriver *usbp) {
-    palSetPadMode(GPIOE, 10, PAL_MODE_OUTPUT_PUSHPULL);
-    palSetPad(GPIOE, 10);
     chSysLockFromISR();
     usbStartTransmitI(usbp, HID_IN_EP_ADDRESS, (uint8_t *)&hid_in_data, sizeof (hid_in_data));
     chSysUnlockFromISR();
@@ -112,8 +110,6 @@ void hidDataTransmitted(USBDriver *usbp, usbep_t ep){
 void hidDataReceived(USBDriver *usbp, usbep_t ep){
     (void)usbp;
     (void)ep;
-    palSetPadMode(GPIOE, 15, PAL_MODE_OUTPUT_PUSHPULL);
-    palSetPad(GPIOE, 15);
 }
 
 
