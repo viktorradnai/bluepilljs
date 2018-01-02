@@ -91,6 +91,10 @@ bool_t hidRequestsHook(USBDriver *usbp){
             return FALSE;
         }
     }
+
+    if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS) {
+        return sduRequestsHook(usbp);
+    }
     return FALSE;
 }
 

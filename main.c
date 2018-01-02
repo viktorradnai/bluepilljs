@@ -4,6 +4,13 @@
 #include "usbcfg.h"
 #include <math.h>
 
+#include "test.h"
+#include "chprintf.h"
+#include "shell.h"
+
+/* Virtual serial port over USB.*/
+SerialUSBDriver SDU1;
+
 /*
  * I2C1 config.
  */
@@ -29,6 +36,78 @@ typedef enum {
     JSCAL_ON,
     JSCAL_END
 } js_state_t;
+
+/*===========================================================================*/
+/* Command line related.                                                     */
+/*===========================================================================*/
+
+#define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
+#define TEST_WA_SIZE    THD_WORKING_AREA_SIZE(256)
+
+static void cmd_mem(BaseSequentialStream *chp, int argc, char *argv[]) {
+  size_t n, size;
+
+  (void)argv;
+  if (argc > 0) {
+    chprintf(chp, "Usage: mem\r\n");
+    return;
+  }
+  n = chHeapStatus(NULL, &size);
+  chprintf(chp, "core free memory : %u bytes\r\n", chCoreGetStatusX());
+  chprintf(chp, "heap fragments   : %u\r\n", n);
+  chprintf(chp, "heap free total  : %u bytes\r\n", size);
+}
+
+static void cmd_threads(BaseSequentialStream *chp, int argc, char *argv[]) {
+  static const char *states[] = {CH_STATE_NAMES};
+  thread_t *tp;
+
+  (void)argv;
+  if (argc > 0) {
+    chprintf(chp, "Usage: threads\r\n");
+    return;
+  }
+  chprintf(chp, "    addr    stack prio refs     state\r\n");
+  tp = chRegFirstThread();
+  do {
+    chprintf(chp, "%08lx %08lx %4lu %4lu %9s\r\n",
+             (uint32_t)tp, (uint32_t)tp->p_ctx.r13,
+             (uint32_t)tp->p_prio, (uint32_t)(tp->p_refs - 1),
+             states[tp->p_state]);
+    tp = chRegNextThread(tp);
+  } while (tp != NULL);
+}
+
+static void cmd_test(BaseSequentialStream *chp, int argc, char *argv[]) {
+  thread_t *tp;
+
+  (void)argv;
+  if (argc > 0) {
+    chprintf(chp, "Usage: test\r\n");
+    return;
+  }
+  tp = chThdCreateFromHeap(NULL, TEST_WA_SIZE, chThdGetPriorityX(),
+                           TestThread, chp);
+  if (tp == NULL) {
+    chprintf(chp, "out of memory\r\n");
+    return;
+  }
+  chThdWait(tp);
+}
+
+static const ShellCommand commands[] = {
+  {"mem", cmd_mem},
+  {"threads", cmd_threads},
+  {"test", cmd_test},
+  {NULL, NULL}
+};
+
+static const ShellConfig shell_cfg1 = {
+  (BaseSequentialStream *)&SDU1,
+  commands
+};
+
+
 
 static void writeByteI2C(uint8_t addr, uint8_t reg, uint8_t val)
 {
@@ -68,6 +147,9 @@ static uint8_t magRead(float* data)
 
 static void usb_init(void) {
     usbInitState = 0;
+    sduObjectInit(&SDU1);
+    sduStart(&SDU1, &serusbcfg);
+
     usbDisconnectBus(&USBD1);
     chThdSleepMilliseconds(1000);
     usbStart(&USBD1, &usbcfg);
@@ -108,8 +190,13 @@ static void calibrate(float hdg) {
 }
 
 int main(void) {
+    thread_t *shelltp = NULL;
+
     halInit();
     chSysInit();
+    /* Shell manager initialization */
+    shellInit();
+
     i2cStart(&I2CD1, &i2cconfig);
     usb_init();
     magInit();
@@ -120,6 +207,21 @@ int main(void) {
 
     while(1) {
         uint16_t btns;
+
+        if (!shelltp) {
+            if (SDU1.config->usbp->state == USB_ACTIVE) {
+                /* Spawns a new shell.*/
+                shelltp = shellCreate(&shell_cfg1, SHELL_WA_SIZE, NORMALPRIO);
+            }
+        } else {
+            /* If the previous shell exited.*/
+            if (chThdTerminatedX(shelltp)) {
+                /* Recovers memory of the previous shell.*/
+                chThdRelease(shelltp);
+                shelltp = NULL;
+            }
+        }
+
         if (magRead(magData)) {
             x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
             y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
