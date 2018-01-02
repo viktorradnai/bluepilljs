@@ -104,8 +104,6 @@ bool_t hidRequestsHook(USBDriver *usbp){
 void hidDataTransmitted(USBDriver *usbp, usbep_t ep){
     (void)usbp;
     (void)ep;
-    palSetPadMode(GPIOE, 14, PAL_MODE_OUTPUT_PUSHPULL);
-    palClearPad(GPIOE, 14);
     //hid_transmit(usbp,&hid_in_data);
 }
 

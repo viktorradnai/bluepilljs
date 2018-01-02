@@ -8,6 +8,11 @@
 #include "chprintf.h"
 #include "shell.h"
 
+#define MAG_DEV_ADDR 0x1E
+// #define MAG_DEV_LSM303C 1
+#define MAG_DEV_LSM303HDLC 2
+
+
 /* Virtual serial port over USB.*/
 SerialUSBDriver SDU1;
 
@@ -116,23 +121,38 @@ static void writeByteI2C(uint8_t addr, uint8_t reg, uint8_t val)
     (void)i2cMasterTransmitTimeout(&I2CD1, addr, cmd, 2, NULL, 0, TIME_INFINITE);
     i2cReleaseBus(&I2CD1);
 }
-
+#if MAG_DEV_LSM303C
+#define MAG_DEV_START_REG 0x28
 static void magInit(void)
 {
     // Highest speed
-    writeByteI2C(0x1E, 0x00, 0x1C);
+    writeByteI2C(MAG_DEV_ADDR, 0x20, 0x7C);
     // Lowest gain
-    writeByteI2C(0x1E, 0x01, 0xE0);
+    writeByteI2C(MAG_DEV_ADDR, 0x21, 0x60);
     // Continuous conversion mode
-    writeByteI2C(0x1E, 0x02, 0x00);
+    writeByteI2C(MAG_DEV_ADDR, 0x22, 0x00);
+
+    writeByteI2C(MAG_DEV_ADDR, 0x23, 0x0E);
 }
+#elif MAG_DEV_LSM303HDLC
+#define MAG_DEV_START_REG 0x03
+static void magInit(void)
+{
+    // Highest speed
+    writeByteI2C(MAG_DEV_ADDR, 0x00, 0x1C);
+    // Lowest gain
+    writeByteI2C(MAG_DEV_ADDR, 0x01, 0xE0);
+    // Continuous conversion mode
+    writeByteI2C(MAG_DEV_ADDR, 0x02, 0x00);
+}
+#endif // MAG_DEV
 
 static uint8_t magRead(float* data)
 {
-    uint8_t start_reg = 0x03;
+    uint8_t start_reg = MAG_DEV_START_REG;
     uint8_t out[7];
     i2cAcquireBus(&I2CD1);
-    msg_t f = i2cMasterTransmitTimeout(&I2CD1, 0x1E, &start_reg, 1, out, 7, TIME_INFINITE);
+    msg_t f = i2cMasterTransmitTimeout(&I2CD1, MAG_DEV_ADDR, &start_reg, 1, out, 7, TIME_INFINITE);
     (void)f;
     i2cReleaseBus(&I2CD1);
     //out[6] doesn't seem to reflect actual new data, so just push out every time
@@ -194,16 +214,21 @@ int main(void) {
 
     halInit();
     chSysInit();
+
     /* Shell manager initialization */
     shellInit();
 
     i2cStart(&I2CD1, &i2cconfig);
-    usb_init();
     magInit();
+
+    palSetPadMode(GPIOC, 13, PAL_MODE_OUTPUT_PUSHPULL);
+    palClearPad(GPIOC, 13);
+    usb_init();
 
     float magData[3], magBuf[3];
     float hdg = 0, x, y;
     magBuf[0] = magBuf[1] = magBuf[2] = 0;
+
 
     while(1) {
         uint16_t btns;
