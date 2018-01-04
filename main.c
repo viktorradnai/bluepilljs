@@ -5,6 +5,7 @@
 #include "usbcfg.h"
 #include "cmd.h"
 #include "mag.h"
+#include "ems22a.h"
 #include <math.h>
 
 #include "chprintf.h"
@@ -24,7 +25,7 @@ static const SPIConfig spicfg = {
     NULL,
     GPIOA,
     GPIOA_SPI1NSS,
-    SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0 | SPI_CR1_DFF,
+    SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0 | SPI_CR1_CPOL | SPI_CR1_DFF,
 };
 
 typedef struct {
@@ -140,21 +141,40 @@ static THD_FUNCTION(mag_thread, arg) {
 
 static THD_WORKING_AREA(spi_thread_wa, 256);
 static THD_FUNCTION(spi_thread, p) {
-
-    static uint8_t rxbuf[4];
+    /*
+     * The EMS22A prepends a dummy bit before the start of each 16 bit frame which makes each frame 17 bits each.
+     * We must allocate enough extra space the extra bits. One extra 16 bit word gives us space for 16 * 17 bits = 16 daisy chained devices.
+     */
+    static frame rxbuf[EMS22A_CHAIN_LEN+1]; //
     (void)p;
 
     chRegSetThreadName("SPI thread");
     while (1) {
         spiSelect(&SPID1);
-        spiReceive(&SPID1, 3, rxbuf);
+        spiReceive(&SPID1, EMS22A_CHAIN_LEN+1, (uint16_t *)rxbuf);
         spiUnselect(&SPID1);
-        uint16_t val = (rxbuf[1] << 3) + (rxbuf[0] >> 5);
-        uint16_t i = 0;
 
-        if(!i++) chprintf((BaseSequentialStream *)&SDU1, "SPI: %d %x %x\r\n", val, rxbuf[1], rxbuf[0]);
+        /* 17 bit to 16 bit data conversion */
+        uint16_t tmp;
+        for (uint8_t i = 0; i < EMS22A_CHAIN_LEN+1; i++) {
+            tmp = rxbuf[i].word >> (16-i); // Only keep the bits which will get moved to the previous frame
+            rxbuf[i].word <<= (i+1);
+            if (i > 0) {
+                rxbuf[i-1].word += tmp;
+                rxbuf[i-1].data.parity = ems22a_check_parity(&rxbuf[i-1]);
+            }
+        }
+
+        for (uint8_t i = 0; i < EMS22A_CHAIN_LEN; i++) {
+           if (rxbuf[i].word & 0x2f) {
+                chprintf((BaseSequentialStream *)&SDU1, "EMS22A error, device %d, value: %04d, error bits: %d %d %d %d %d %d \r\n", i, rxbuf[i].data.value,
+                    rxbuf[i].data.end_offst_comp, rxbuf[i].data.cordic_oflow, rxbuf[i].data.linearity_alarm,
+                    rxbuf[i].data.mag_increase, rxbuf[i].data.mag_decrease, rxbuf[i].data.parity);
+            }
+
+        }
+
         chThdSleepMilliseconds(5);
-
     }
 }
 
