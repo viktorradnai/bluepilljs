@@ -20,6 +20,13 @@ static const I2CConfig i2cconfig = {
     STD_DUTY_CYCLE,
 };
 
+static const SPIConfig spicfg = {
+    NULL,
+    GPIOA,
+    GPIOA_SPI1NSS,
+    SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0 | SPI_CR1_DFF,
+};
+
 typedef struct {
     float offset;
     float min;
@@ -96,16 +103,18 @@ static void calibrate(float hdg) {
 }
 #endif
 
-static THD_WORKING_AREA(waThread1, 512);
-static THD_FUNCTION(Thread1, arg) {
+static THD_WORKING_AREA(mag_thread_wa, 512);
+static THD_FUNCTION(mag_thread, arg) {
     (void)arg;
     uint16_t btns;
     float magData[3], magBuf[3];
     float hdg = 0, x, y;
     magBuf[0] = magBuf[1] = magBuf[2] = 0;
 
+    chRegSetThreadName("Magnetometer thread");
+
     while(1) {
-        palTogglePad(GPIOC, GPIOC_LED);
+        // palTogglePad(GPIOC, GPIOC_LED);
         magRead(magData);
         x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
         y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
@@ -125,9 +134,29 @@ static THD_FUNCTION(Thread1, arg) {
         btns = palReadPort(GPIOA);
         hid_in_data.button = (uint8_t)((~btns) & 0xFF);
         hid_transmit(&USBD1);
+        // chprintf((BaseSequentialStream *)&SDU1, "Hdg: %d\r\n", hid_in_data.x);
     }
 }
 
+static THD_WORKING_AREA(spi_thread_wa, 256);
+static THD_FUNCTION(spi_thread, p) {
+
+    static uint8_t rxbuf[4];
+    (void)p;
+
+    chRegSetThreadName("SPI thread");
+    while (1) {
+        spiSelect(&SPID1);
+        spiReceive(&SPID1, 3, rxbuf);
+        spiUnselect(&SPID1);
+        uint16_t val = (rxbuf[1] << 3) + (rxbuf[0] >> 5);
+        uint16_t i = 0;
+
+        if(!i++) chprintf((BaseSequentialStream *)&SDU1, "SPI: %d %x %x\r\n", val, rxbuf[1], rxbuf[0]);
+        chThdSleepMilliseconds(5);
+
+    }
+}
 
 int main(void) {
     thread_t *shelltp = NULL;
@@ -136,13 +165,13 @@ int main(void) {
     chSysInit();
     shellInit();
 
-    palSetPadMode(GPIOC, GPIOC_LED, PAL_MODE_OUTPUT_PUSHPULL);
-
     i2cStart(&I2CD1, &i2cconfig);
+    spiStart(&SPID1, &spicfg);
     usb_init();
     magInit();
 
-    chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO + 10, Thread1, NULL);
+    chThdCreateStatic(mag_thread_wa, sizeof(mag_thread_wa), NORMALPRIO + 2, mag_thread, NULL);
+    chThdCreateStatic(spi_thread_wa, sizeof(spi_thread_wa), NORMALPRIO + 3, spi_thread, NULL);
 
     while(1) {
         if (!shelltp) {

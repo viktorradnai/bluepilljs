@@ -4,7 +4,7 @@
 #define MAG_DEV_ADDR 0x1E
 #define MAG_DEV_LSM303C 1
 #define MAG_DEV_LSM303HDLC 2
-#define MAG_DEV_TYPE MAG_DEV_LSM303C
+#define MAG_DEV_TYPE MAG_DEV_LSM303HDLC
 
 void writeByteI2C(uint8_t addr, uint8_t reg, uint8_t val)
 {

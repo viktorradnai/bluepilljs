@@ -61,6 +61,9 @@
 #define GPIOC_OSC32_IN          14
 #define GPIOC_OSC32_OUT         15
 
+#define GPIOA_SPI1NSS           4
+#define GPIOB_SPI2NSS           12
+
 /*
  * I/O ports initial setup, this configuration is established soon after reset
  * in the initialization code.
@@ -88,17 +91,20 @@
 /*
  * Port A setup.
  * Everything input with pull-up except:
+ * PA4-7 - SPI
  */
-#define VAL_GPIOACRL            0x88888888      /*  PA7...PA0 */
+#define VAL_GPIOACRL            0xBBB38888      /*  PA7...PA0 */
 #define VAL_GPIOACRH            0x88888888      /* PA15...PA8 */
 #define VAL_GPIOAODR            0xFFFFFFFF
 
 /*
  * Port B setup.
  * Everything input with pull-up except:
+ * PB6, PB7 - I2C SCL and SDA
+ * PB12-15 - SPI
  */
 #define VAL_GPIOBCRL            0xEE888888      /*  PB7...PB0 */
-#define VAL_GPIOBCRH            0x88888888      /* PB15...PB8 */
+#define VAL_GPIOBCRH            0xBBB38888      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
 
 /*
