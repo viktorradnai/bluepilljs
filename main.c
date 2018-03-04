@@ -66,10 +66,14 @@ static void usb_init(void) {
     usbDisconnectBus(&USBD1);
     chThdSleepMilliseconds(1000);
     usbStart(&USBD1, &usbcfg);
+
     usbConnectBus(&USBD1);
 
-    while (usbInitState == 0)
+    while (usbInitState == 0) {
+        palTogglePad(GPIOC, GPIOC_LED);
         chThdSleepMilliseconds(50);
+    }
+    palSetPad(GPIOC, GPIOC_LED);
 }
 
 #if 0
@@ -114,9 +118,11 @@ static THD_FUNCTION(mag_thread, arg) {
 
     chRegSetThreadName("Magnetometer thread");
 
+    chThdSleepMilliseconds(5000);
+    magInit();
     while(1) {
-        // palTogglePad(GPIOC, GPIOC_LED);
         magRead(magData);
+        continue;
         x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
         y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
         hdg = (atan2f(y, x) / M_PI);
@@ -135,7 +141,7 @@ static THD_FUNCTION(mag_thread, arg) {
         btns = palReadPort(GPIOA);
         hid_in_data.button = (uint8_t)((~btns) & 0xFF);
         hid_transmit(&USBD1);
-        // chprintf((BaseSequentialStream *)&SDU1, "Hdg: %d\r\n", hid_in_data.x);
+        //chprintf((BaseSequentialStream *)&SDU1, "Hdg: %d\r\n", hid_in_data.x);
     }
 }
 
@@ -188,12 +194,14 @@ int main(void) {
     i2cStart(&I2CD1, &i2cconfig);
     spiStart(&SPID1, &spicfg);
     usb_init();
-    magInit();
 
     chThdCreateStatic(mag_thread_wa, sizeof(mag_thread_wa), NORMALPRIO + 2, mag_thread, NULL);
     chThdCreateStatic(spi_thread_wa, sizeof(spi_thread_wa), NORMALPRIO + 3, spi_thread, NULL);
 
+
     while(1) {
+        // chprintf((BaseSequentialStream *)&SDU1, "Idle");
+
         if (!shelltp) {
             if (SDU1.config->usbp->state == USB_ACTIVE) {
                 /* Spawns a new shell.*/
