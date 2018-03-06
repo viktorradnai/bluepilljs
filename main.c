@@ -1,15 +1,18 @@
 #include "hal.h"
 #include "ch.h"
+#include "chprintf.h"
+#include "shell.h"
 
 #include "usb_hid.h"
 #include "usbcfg.h"
 #include "cmd.h"
-#include "mag.h"
 #include "ems22a.h"
+#include "mlx90393.h"
+#include "lsm303.h"
+
 #include <math.h>
 
-#include "chprintf.h"
-#include "shell.h"
+#define printf(args...) chprintf((BaseSequentialStream *)&SDU1, args);
 
 /* Virtual serial port over USB */
 SerialUSBDriver SDU1;
@@ -108,20 +111,24 @@ static void calibrate(float hdg) {
 }
 #endif
 
-static THD_WORKING_AREA(mag_thread_wa, 512);
-static THD_FUNCTION(mag_thread, arg) {
+static THD_WORKING_AREA(mlx90393_thread_wa, 512);
+static THD_FUNCTION(mlx90393_thread, arg) {
     (void)arg;
     uint16_t btns;
-    float magData[3], magBuf[3];
+    int16_t magData[3];
+    float magBuf[3];
     float hdg = 0, x, y;
     magBuf[0] = magBuf[1] = magBuf[2] = 0;
 
-    chRegSetThreadName("Magnetometer thread");
+    chRegSetThreadName("MLX90393 thread");
 
-    chThdSleepMilliseconds(5000);
-    magInit();
+    if(!mlx90393_init()) {
+        printf("MLX90393 not found\r\n");
+        chThdExit(0);
+    }
+
     while(1) {
-        magRead(magData);
+        mlx90393_read(magData);
         continue;
         x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
         y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
@@ -145,8 +152,86 @@ static THD_FUNCTION(mag_thread, arg) {
     }
 }
 
-static THD_WORKING_AREA(spi_thread_wa, 256);
-static THD_FUNCTION(spi_thread, p) {
+
+static THD_WORKING_AREA(lsm303c_thread_wa, 512);
+static THD_FUNCTION(lsm303c_thread, arg) {
+    (void)arg;
+    uint16_t btns;
+    float magData[3], magBuf[3];
+    float hdg = 0, x, y;
+    magBuf[0] = magBuf[1] = magBuf[2] = 0;
+
+    chRegSetThreadName("LSM303C thread");
+
+    if(!lsm303c_init()) {
+        printf("LSM303C not found\r\n");
+        chThdExit(0);
+    }
+    while(1) {
+        lsm303c_read(magData);
+        continue;
+        x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
+        y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
+        hdg = (atan2f(y, x) / M_PI);
+        if (hdg < -1) hdg += 2;
+        if (hdg > 1) hdg -= 2;
+        hdg *= 128;
+
+        //calibrate(hdg);
+        //hdg += cal_data.offset;
+        //if (hdg > 0) hdg *= cal_data.m2;
+        //else hdg *= cal_data.m1;
+        if (hdg > 128) hdg = 128;
+        else if (hdg < -127) hdg = -127;
+
+        hid_in_data.x = (int8_t) hdg;
+        btns = palReadPort(GPIOA);
+        hid_in_data.button = (uint8_t)((~btns) & 0xFF);
+        hid_transmit(&USBD1);
+        //chprintf((BaseSequentialStream *)&SDU1, "Hdg: %d\r\n", hid_in_data.x);
+    }
+}
+static THD_WORKING_AREA(lsm303dhlc_thread_wa, 512);
+static THD_FUNCTION(lsm303dhlc_thread, arg) {
+    (void)arg;
+    uint16_t btns;
+    float magData[3], magBuf[3];
+    float hdg = 0, x, y;
+    magBuf[0] = magBuf[1] = magBuf[2] = 0;
+
+    chRegSetThreadName("LSM303DHLC thread");
+
+    if(!lsm303dhlc_init()) {
+        printf("LSM303DHLC not found\r\n");
+        chThdExit(0);
+    }
+    while(1) {
+        lsm303dhlc_read(magData);
+        continue;
+        x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
+        y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
+        hdg = (atan2f(y, x) / M_PI);
+        if (hdg < -1) hdg += 2;
+        if (hdg > 1) hdg -= 2;
+        hdg *= 128;
+
+        //calibrate(hdg);
+        //hdg += cal_data.offset;
+        //if (hdg > 0) hdg *= cal_data.m2;
+        //else hdg *= cal_data.m1;
+        if (hdg > 128) hdg = 128;
+        else if (hdg < -127) hdg = -127;
+
+        hid_in_data.x = (int8_t) hdg;
+        btns = palReadPort(GPIOA);
+        hid_in_data.button = (uint8_t)((~btns) & 0xFF);
+        hid_transmit(&USBD1);
+        //chprintf((BaseSequentialStream *)&SDU1, "Hdg: %d\r\n", hid_in_data.x);
+    }
+}
+
+static THD_WORKING_AREA(ems22a_thread_wa, 256);
+static THD_FUNCTION(ems22a_thread, p) {
     /*
      * The EMS22A prepends a dummy bit before the start of each 16 bit frame which makes each frame 17 bits each.
      * We must allocate enough extra space the extra bits. One extra 16 bit word gives us space for 16 * 17 bits = 16 daisy chained devices.
@@ -154,7 +239,7 @@ static THD_FUNCTION(spi_thread, p) {
     static frame rxbuf[EMS22A_CHAIN_LEN+1]; //
     (void)p;
 
-    chRegSetThreadName("SPI thread");
+    chRegSetThreadName("EMS22A thread");
     while (1) {
         spiSelect(&SPID1);
         spiReceive(&SPID1, EMS22A_CHAIN_LEN+1, (uint16_t *)rxbuf);
@@ -173,13 +258,12 @@ static THD_FUNCTION(spi_thread, p) {
 
         for (uint8_t i = 0; i < EMS22A_CHAIN_LEN; i++) {
            if (rxbuf[i].word & 0x2f) {
-                chprintf((BaseSequentialStream *)&SDU1, "EMS22A error, device %d, value: %04d, error bits: %d %d %d %d %d %d \r\n", i, rxbuf[i].data.value,
+                chprintf((BaseSequentialStream *)&SDU1,
+                    "EMS22A error, device %d, value: %04d, error bits: end_offst_comp %d, cordic_oflow %d, linearity_alarm %d, mag_increase %d, mag_decrease %d, parity %d\r\n", i, rxbuf[i].data.value,
                     rxbuf[i].data.end_offst_comp, rxbuf[i].data.cordic_oflow, rxbuf[i].data.linearity_alarm,
                     rxbuf[i].data.mag_increase, rxbuf[i].data.mag_decrease, rxbuf[i].data.parity);
             }
-
         }
-
         chThdSleepMilliseconds(5);
     }
 }
@@ -195,8 +279,13 @@ int main(void) {
     spiStart(&SPID1, &spicfg);
     usb_init();
 
-    chThdCreateStatic(mag_thread_wa, sizeof(mag_thread_wa), NORMALPRIO + 2, mag_thread, NULL);
-    chThdCreateStatic(spi_thread_wa, sizeof(spi_thread_wa), NORMALPRIO + 3, spi_thread, NULL);
+    chprintf((BaseSequentialStream *)&SDU1, "Sleeping for 5 seconds");
+    chThdSleepMilliseconds(5000);
+
+    chThdCreateStatic(mlx90393_thread_wa, sizeof(mlx90393_thread_wa), NORMALPRIO + 4, mlx90393_thread, NULL);
+    chThdCreateStatic(lsm303c_thread_wa, sizeof(lsm303c_thread_wa), NORMALPRIO + 3, lsm303c_thread, NULL);
+    chThdCreateStatic(lsm303dhlc_thread_wa, sizeof(lsm303dhlc_thread_wa), NORMALPRIO + 2, lsm303dhlc_thread, NULL);
+    chThdCreateStatic(ems22a_thread_wa, sizeof(ems22a_thread_wa), NORMALPRIO + 1, ems22a_thread, NULL);
 
 
     while(1) {

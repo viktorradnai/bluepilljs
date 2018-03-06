@@ -67,15 +67,27 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="cmd.h" />
-		<Unit filename="halconf.h" />
-		<Unit filename="mag.c">
+		<Unit filename="ems22a.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="mag.h" />
+		<Unit filename="ems22a.h" />
+		<Unit filename="halconf.h" />
+		<Unit filename="i2c_util.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="i2c_util.h" />
+		<Unit filename="lsm303.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="lsm303.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="mcuconf.h" />
+		<Unit filename="mlx90393.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="mlx90393.h" />
 		<Unit filename="usb_hid.c">
 			<Option compilerVar="CC" />
 		</Unit>
