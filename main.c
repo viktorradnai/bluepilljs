@@ -257,14 +257,16 @@ static THD_FUNCTION(ems22a_thread, p) {
         }
 
         for (uint8_t i = 0; i < EMS22A_CHAIN_LEN; i++) {
-           if (rxbuf[i].word & 0x2f) {
-                chprintf((BaseSequentialStream *)&SDU1,
-                    "EMS22A error, device %d, value: %04d, error bits: end_offst_comp %d, cordic_oflow %d, linearity_alarm %d, mag_increase %d, mag_decrease %d, parity %d\r\n", i, rxbuf[i].data.value,
+           if (rxbuf[i].data.cordic_oflow | rxbuf[i].data.linearity_alarm | rxbuf[i].data.mag_increase | rxbuf[i].data.mag_decrease | rxbuf[i].data.parity) {
+                printf("EMS22A error, device %d, value: %04d, error bits: end_offst_comp %d, cordic_oflow %d, linearity_alarm %d, mag_increase %d, mag_decrease %d, parity %d\r\n", i, rxbuf[i].data.value,
                     rxbuf[i].data.end_offst_comp, rxbuf[i].data.cordic_oflow, rxbuf[i].data.linearity_alarm,
                     rxbuf[i].data.mag_increase, rxbuf[i].data.mag_decrease, rxbuf[i].data.parity);
+            } else {
+
+                printf("EMS22A device %d, value: %04d\r\n", i, rxbuf[i].data.value);
             }
         }
-        chThdSleepMilliseconds(5);
+        chThdSleepMilliseconds(10);
     }
 }
 
