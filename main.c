@@ -111,14 +111,35 @@ static void calibrate(float hdg) {
 }
 #endif
 
+static float xy_to_hdg(float x, float y)
+{
+    float hdg = (atan2f(y, x) / M_PI);
+    if (hdg < -1) hdg += 2;
+    if (hdg > 1) hdg -= 2;
+    hdg *= 128;
+
+    //calibrate(hdg);
+    //hdg += cal_data.offset;
+    //if (hdg > 0) hdg *= cal_data.m2;
+    //else hdg *= cal_data.m1;
+    if (hdg > 128) hdg = 128;
+    else if (hdg < -127) hdg = -127;
+    return hdg;
+}
+
+static uint8_t read_buttons(void)
+{
+    uint16_t btns = palReadPort(GPIOA);
+    return (uint8_t)((~btns) & 0xFF);
+}
+
 static THD_WORKING_AREA(mlx90393_thread_wa, 512);
-static THD_FUNCTION(mlx90393_thread, arg) {
+static THD_FUNCTION(mlx90393_thread, arg)
+{
     (void)arg;
-    uint16_t btns;
-    int16_t magData[3];
-    float magBuf[3];
-    float hdg = 0, x, y;
-    magBuf[0] = magBuf[1] = magBuf[2] = 0;
+    int16_t data[3];
+    float buf[3] = { 0, 0, 0 };
+    float hdg = 0;
 
     chRegSetThreadName("MLX90393 thread");
 
@@ -128,38 +149,27 @@ static THD_FUNCTION(mlx90393_thread, arg) {
     }
 
     while(1) {
-        mlx90393_read(magData);
+        mlx90393_read(data);
+        printf("MLX90393 XYZ: %d %d %d\r\n", data[0], data[1], data[2]);
+
         continue;
-        x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
-        y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
-        hdg = (atan2f(y, x) / M_PI);
-        if (hdg < -1) hdg += 2;
-        if (hdg > 1) hdg -= 2;
-        hdg *= 128;
+        buf[0] = (buf[0] * 7 + data[0]) / 8;
+        buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        //calibrate(hdg);
-        //hdg += cal_data.offset;
-        //if (hdg > 0) hdg *= cal_data.m2;
-        //else hdg *= cal_data.m1;
-        if (hdg > 128) hdg = 128;
-        else if (hdg < -127) hdg = -127;
-
+        hdg = xy_to_hdg(buf[0], buf[1]);
         hid_in_data.x = (int8_t) hdg;
-        btns = palReadPort(GPIOA);
-        hid_in_data.button = (uint8_t)((~btns) & 0xFF);
+        hid_in_data.button = read_buttons();
         hid_transmit(&USBD1);
-        //chprintf((BaseSequentialStream *)&SDU1, "Hdg: %d\r\n", hid_in_data.x);
     }
 }
 
-
 static THD_WORKING_AREA(lsm303c_thread_wa, 512);
-static THD_FUNCTION(lsm303c_thread, arg) {
+static THD_FUNCTION(lsm303c_thread, arg)
+{
     (void)arg;
-    uint16_t btns;
-    float magData[3], magBuf[3];
-    float hdg = 0, x, y;
-    magBuf[0] = magBuf[1] = magBuf[2] = 0;
+    int16_t data[3];
+    float buf[3] = { 0, 0, 0 };
+    float hdg = 0;
 
     chRegSetThreadName("LSM303C thread");
 
@@ -168,36 +178,27 @@ static THD_FUNCTION(lsm303c_thread, arg) {
         chThdExit(0);
     }
     while(1) {
-        lsm303c_read(magData);
+        lsm303c_read(data);
+        printf("LSM303C XYZ: %d %d %d\r\n", data[0], data[1], data[2]);
+
         continue;
-        x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
-        y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
-        hdg = (atan2f(y, x) / M_PI);
-        if (hdg < -1) hdg += 2;
-        if (hdg > 1) hdg -= 2;
-        hdg *= 128;
+        buf[0] = (buf[0] * 7 + data[0]) / 8;
+        buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        //calibrate(hdg);
-        //hdg += cal_data.offset;
-        //if (hdg > 0) hdg *= cal_data.m2;
-        //else hdg *= cal_data.m1;
-        if (hdg > 128) hdg = 128;
-        else if (hdg < -127) hdg = -127;
-
+        hdg = xy_to_hdg(buf[0], buf[1]);
         hid_in_data.x = (int8_t) hdg;
-        btns = palReadPort(GPIOA);
-        hid_in_data.button = (uint8_t)((~btns) & 0xFF);
+        hid_in_data.button = read_buttons();
         hid_transmit(&USBD1);
-        //chprintf((BaseSequentialStream *)&SDU1, "Hdg: %d\r\n", hid_in_data.x);
     }
 }
+
 static THD_WORKING_AREA(lsm303dhlc_thread_wa, 512);
-static THD_FUNCTION(lsm303dhlc_thread, arg) {
+static THD_FUNCTION(lsm303dhlc_thread, arg)
+{
     (void)arg;
-    uint16_t btns;
-    float magData[3], magBuf[3];
-    float hdg = 0, x, y;
-    magBuf[0] = magBuf[1] = magBuf[2] = 0;
+    int16_t data[3];
+    float buf[3] = { 0, 0, 0 };
+    float hdg = 0;
 
     chRegSetThreadName("LSM303DHLC thread");
 
@@ -206,27 +207,17 @@ static THD_FUNCTION(lsm303dhlc_thread, arg) {
         chThdExit(0);
     }
     while(1) {
-        lsm303dhlc_read(magData);
+        lsm303dhlc_read(data);
+        printf("LSM303DHLC XYZ: %d %d %d\r\n", data[0], data[1], data[2]);
+
         continue;
-        x = magBuf[0] = (magBuf[0] * 7 + magData[0]) / 8;
-        y = magBuf[1] = (magBuf[1] * 7 + magData[1]) / 8;
-        hdg = (atan2f(y, x) / M_PI);
-        if (hdg < -1) hdg += 2;
-        if (hdg > 1) hdg -= 2;
-        hdg *= 128;
+        buf[0] = (buf[0] * 7 + data[0]) / 8;
+        buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        //calibrate(hdg);
-        //hdg += cal_data.offset;
-        //if (hdg > 0) hdg *= cal_data.m2;
-        //else hdg *= cal_data.m1;
-        if (hdg > 128) hdg = 128;
-        else if (hdg < -127) hdg = -127;
-
+        hdg = xy_to_hdg(buf[0], buf[1]);
         hid_in_data.x = (int8_t) hdg;
-        btns = palReadPort(GPIOA);
-        hid_in_data.button = (uint8_t)((~btns) & 0xFF);
+        hid_in_data.button = read_buttons();
         hid_transmit(&USBD1);
-        //chprintf((BaseSequentialStream *)&SDU1, "Hdg: %d\r\n", hid_in_data.x);
     }
 }
 
@@ -236,25 +227,12 @@ static THD_FUNCTION(ems22a_thread, p) {
      * The EMS22A prepends a dummy bit before the start of each 16 bit frame which makes each frame 17 bits each.
      * We must allocate enough extra space the extra bits. One extra 16 bit word gives us space for 16 * 17 bits = 16 daisy chained devices.
      */
-    static frame rxbuf[EMS22A_CHAIN_LEN+1]; //
+    static ems22a_frame rxbuf[EMS22A_CHAIN_LEN+1]; //
     (void)p;
 
     chRegSetThreadName("EMS22A thread");
     while (1) {
-        spiSelect(&SPID1);
-        spiReceive(&SPID1, EMS22A_CHAIN_LEN+1, (uint16_t *)rxbuf);
-        spiUnselect(&SPID1);
-
-        /* 17 bit to 16 bit data conversion */
-        uint16_t tmp;
-        for (uint8_t i = 0; i < EMS22A_CHAIN_LEN+1; i++) {
-            tmp = rxbuf[i].word >> (16-i); // Only keep the bits which will get moved to the previous frame
-            rxbuf[i].word <<= (i+1);
-            if (i > 0) {
-                rxbuf[i-1].word += tmp;
-                rxbuf[i-1].data.parity = ems22a_check_parity(&rxbuf[i-1]);
-            }
-        }
+        ems22a_receive(rxbuf, EMS22A_CHAIN_LEN);
 
         for (uint8_t i = 0; i < EMS22A_CHAIN_LEN; i++) {
            if (rxbuf[i].data.cordic_oflow | rxbuf[i].data.linearity_alarm | rxbuf[i].data.mag_increase | rxbuf[i].data.mag_decrease | rxbuf[i].data.parity) {

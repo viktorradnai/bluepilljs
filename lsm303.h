@@ -14,6 +14,6 @@ typedef int bool_t;
 
 bool_t lsm303c_init(void);
 bool_t lsm303dhlc_init(void);
-bool_t lsm303_read(uint8_t addr, uint8_t out, float* data);
+bool_t lsm303_read(uint8_t addr, uint8_t out, int16_t* data);
 
 #endif // LSM303_H_INCLUDED

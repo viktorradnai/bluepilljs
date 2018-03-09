@@ -31,16 +31,17 @@ bool_t mlx90393_read(int16_t* data)
     uint8_t out1[] = { MLX90393_CMD_MEASURE_XYZ };
     uint8_t out2[] = { MLX90393_CMD_READ_XYZ };
 
+    // Start single measurement
     if (!i2c_write(MLX90393_I2C_ADDR, out1, sizeof(out1), in, 2)) return FALSE;
 
     chThdSleepMilliseconds(100);
 
+    // Fetch result
     if (!i2c_write(MLX90393_I2C_ADDR, out2, sizeof(out2), in, sizeof(in))) return FALSE;
 
     data[0] = (in[3] << 8) | in[2];
     data[1] = (in[5] << 8) | in[4];
     data[2] = (in[7] << 8) | in[6];
 
-    chprintf((BaseSequentialStream *)&SDU1, "MLX90393 XYZ: %d %d %d\r\n", data[0], data[1], data[2]);
     return TRUE;
 }

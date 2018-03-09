@@ -1,6 +1,7 @@
 #ifndef EMS22A_H_INCLUDED
 #define EMS22A_H_INCLUDED
 
+#include "hal.h"
 #include "ch.h"
 
 #define EMS22A_CHAIN_LEN 2
@@ -19,8 +20,9 @@ typedef union {
                 value           : 10;
     } data;
     uint16_t word;
-} frame;
+} ems22a_frame;
 
-uint8_t ems22a_check_parity(frame *f);
+uint8_t ems22a_check_parity(ems22a_frame *f);
+void ems22a_receive(ems22a_frame frames[], uint8_t frame_count);
 
 #endif // EMS22A_H_INCLUDED

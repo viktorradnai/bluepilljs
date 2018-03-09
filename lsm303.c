@@ -31,20 +31,15 @@ bool_t lsm303dhlc_init(void)
     return i2c_write(LSM303DHLC_I2C_ADDR, out3, sizeof(out3), NULL, 0);
 }
 
-bool_t lsm303_read(uint8_t addr, uint8_t out, float* data)
+bool_t lsm303_read(uint8_t addr, uint8_t out, int16_t* data)
 {
     uint8_t in[8];
     if (!i2c_write(addr, &out, sizeof(out), in, sizeof(in))) return FALSE;
 
     //out[6] doesn't seem to reflect actual new data, so just discard it
-    int16_t val_x = (in[0] << 8) | in[1];
-    int16_t val_z = (in[2] << 8) | in[3];
-    int16_t val_y = (in[4] << 8) | in[5];
-
-    chprintf((BaseSequentialStream *)&SDU1, "XYZ: %d %d %d\r\n", val_x,val_y, val_z);
-    data[0] = ((float)val_x)*1.22;
-    data[1] = ((float)val_y)*1.22;
-    data[2] = ((float)val_z)*1.22;
+    data[0] = (in[0] << 8) | in[1];
+    data[1] = (in[2] << 8) | in[3];
+    data[2] = (in[4] << 8) | in[5];
 
     return TRUE;
 }
