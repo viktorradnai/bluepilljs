@@ -150,11 +150,12 @@ static THD_FUNCTION(mlx90393_thread, arg)
 
     while(1) {
         mlx90393_read(data);
-        printf("MLX90393 XYZ: %d %d %d\r\n", data[0], data[1], data[2]);
 
-        continue;
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
+
+        printf("MLX90393 XYZ: %f %f %f\r\n", buf[0], buf[1], buf[2]);
+        continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
         hid_in_data.x = (int8_t) hdg;
@@ -179,11 +180,12 @@ static THD_FUNCTION(lsm303c_thread, arg)
     }
     while(1) {
         lsm303c_read(data);
-        printf("LSM303C XYZ: %d %d %d\r\n", data[0], data[1], data[2]);
 
-        continue;
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
+
+        printf("LSM303C XYZ: %f %f %f\r\n", buf[0], buf[1], buf[2]);
+        continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
         hid_in_data.x = (int8_t) hdg;
@@ -208,11 +210,12 @@ static THD_FUNCTION(lsm303dlhc_thread, arg)
     }
     while(1) {
         lsm303dlhc_read(data);
-        printf("LSM303DLHC XYZ: %d %d %d\r\n", data[0], data[1], data[2]);
 
-        continue;
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
+
+        printf("LSM303DLHC XYZ: %f %f %f\r\n", buf[0], buf[1], buf[2]);
+        continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
         hid_in_data.x = (int8_t) hdg;
@@ -236,7 +239,8 @@ static THD_FUNCTION(ems22a_thread, p) {
 
         for (uint8_t i = 0; i < EMS22A_CHAIN_LEN; i++) {
            if (rxbuf[i].data.cordic_oflow | rxbuf[i].data.linearity_alarm | rxbuf[i].data.mag_increase | rxbuf[i].data.mag_decrease | rxbuf[i].data.parity) {
-                printf("EMS22A error, device %d, value: %04d, error bits: end_offst_comp %d, cordic_oflow %d, linearity_alarm %d, mag_increase %d, mag_decrease %d, parity %d\r\n", i, rxbuf[i].data.value,
+                printf("EMS22A error, device %d, value: %04d, error bits: end_offst_comp %d, cordic_oflow %d, linearity_alarm %d, mag_increase %d, mag_decrease %d, parity %d\r\n",
+                    i, rxbuf[i].data.value,
                     rxbuf[i].data.end_offst_comp, rxbuf[i].data.cordic_oflow, rxbuf[i].data.linearity_alarm,
                     rxbuf[i].data.mag_increase, rxbuf[i].data.mag_decrease, rxbuf[i].data.parity);
             } else {

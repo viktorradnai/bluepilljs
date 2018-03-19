@@ -6,14 +6,22 @@
 #include "lsm303.h"
 
 extern SerialUSBDriver SDU1;
+#define printf(args...) chprintf((BaseSequentialStream *)&SDU1, args);
 
 bool_t lsm303c_init(void)
 {
+    uint8_t ident_out[] = { 0x0F }; // Highest speed
+    uint8_t ident_in[1];
     uint8_t out1[] = { 0x20, 0x7C }; // Highest speed
     uint8_t out2[] = { 0x21, 0x60 }; // Lowest gain
     uint8_t out3[] = { 0x22, 0x00 }; // Continuous conversion mode
     uint8_t out4[] = { 0x23, 0x0E };
 
+    if (!i2c_write(LSM303C_I2C_ADDR, ident_out, sizeof(ident_out), ident_in, sizeof(ident_in))) return FALSE;
+    if (ident_in[0] != 0x3D) {
+        printf("Device at address LSM303C_I2C_ADDR does not appear to be an LSM303C\r\n");
+        return FALSE;
+    }
     if (!i2c_write(LSM303C_I2C_ADDR, out1, sizeof(out1), NULL, 0)) return FALSE;
     if (!i2c_write(LSM303C_I2C_ADDR, out2, sizeof(out2), NULL, 0)) return FALSE;
     if (!i2c_write(LSM303C_I2C_ADDR, out3, sizeof(out3), NULL, 0)) return FALSE;
