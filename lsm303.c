@@ -20,15 +20,15 @@ bool_t lsm303c_init(void)
     return i2c_write(LSM303C_I2C_ADDR, out4, sizeof(out4), NULL, 0);
 }
 
-bool_t lsm303dhlc_init(void)
+bool_t lsm303dlhc_init(void)
 {
     uint8_t out1[] = { 0x00, 0x1C }; // Highest speed
     uint8_t out2[] = { 0x01, 0xE0 }; // Lowest gain
     uint8_t out3[] = { 0x02, 0x00 }; // Continuous conversion mode
 
-    if (!i2c_write(LSM303DHLC_I2C_ADDR, out1, sizeof(out1), NULL, 0)) return FALSE;
-    if (!i2c_write(LSM303DHLC_I2C_ADDR, out2, sizeof(out2), NULL, 0)) return FALSE;
-    return i2c_write(LSM303DHLC_I2C_ADDR, out3, sizeof(out3), NULL, 0);
+    if (!i2c_write(LSM303DLHC_I2C_ADDR, out1, sizeof(out1), NULL, 0)) return FALSE;
+    if (!i2c_write(LSM303DLHC_I2C_ADDR, out2, sizeof(out2), NULL, 0)) return FALSE;
+    return i2c_write(LSM303DLHC_I2C_ADDR, out3, sizeof(out3), NULL, 0);
 }
 
 bool_t lsm303_read(uint8_t addr, uint8_t out, int16_t* data)
