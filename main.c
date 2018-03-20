@@ -1,6 +1,5 @@
 #include "hal.h"
 #include "ch.h"
-#include "chprintf.h"
 #include "shell.h"
 
 #include "usb_hid.h"
@@ -9,10 +8,9 @@
 #include "ems22a.h"
 #include "mlx90393.h"
 #include "lsm303.h"
+#include "printf.h"
 
 #include <math.h>
-
-#define printf(args...) chprintf((BaseSequentialStream *)&SDU1, args);
 
 /* Virtual serial port over USB */
 SerialUSBDriver SDU1;
@@ -154,7 +152,7 @@ static THD_FUNCTION(mlx90393_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf("MLX90393 XYZ: %d %d %d\r\n", buf[0], buf[1], buf[2]);
+        printf("ML393 %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
         continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
@@ -184,7 +182,7 @@ static THD_FUNCTION(lsm303c_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf("LSM303C XYZ: %d %d %d\r\n", buf[0], buf[1], buf[2]);
+        printf(">L303C  %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
         continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
@@ -214,7 +212,7 @@ static THD_FUNCTION(lsm303dlhc_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf("LSM303DLHC XYZ: %d %d %d\r\n", buf[0], buf[1], buf[2]);
+        printf(">L303D %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
         continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
@@ -245,7 +243,7 @@ static THD_FUNCTION(ems22a_thread, p) {
                     rxbuf[i].data.mag_increase, rxbuf[i].data.mag_decrease, rxbuf[i].data.parity);
             } else {
 
-                printf("EMS22A device %d, value: %04d\r\n", i, rxbuf[i].data.value);
+                printf(">E22A%d %04d\r\n", i, rxbuf[i].data.value);
             }
         }
         chThdSleepMilliseconds(10);

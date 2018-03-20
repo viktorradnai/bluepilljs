@@ -1,12 +1,8 @@
 #include "hal.h"
 #include "ch.h"
-#include "chprintf.h"
-
+#include "printf.h"
 #include "i2c_util.h"
 #include "lsm303.h"
-
-extern SerialUSBDriver SDU1;
-#define printf(args...) chprintf((BaseSequentialStream *)&SDU1, args);
 
 bool_t lsm303c_init(void)
 {

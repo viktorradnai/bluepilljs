@@ -47,7 +47,7 @@ class Frame(wx.Frame):
         box = wx.BoxSizer(wx.VERTICAL)
 
         self.rows = {}
-        for key in [ 'EMS22A', 'LSM303C', 'LSM303DLHC', 'MLX90393' ]:
+        for key in [ 'E22A0', 'E22A1', 'L303C', 'L303D', 'ML393' ]:
             m_text = wx.StaticText(panel, -1, "Waiting for data")
             m_text.SetFont(wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD))
             m_text.SetSize(m_text.GetBestSize())

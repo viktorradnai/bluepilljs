@@ -1,6 +1,5 @@
 #include "hal.h"
 #include "ch.h"
-#include "chprintf.h"
 
 #include "i2c_util.h"
 #include "mlx90393.h"
