@@ -36,10 +36,6 @@ def parseCmdline():
 
 class Frame(wx.Frame):
     def __init__(self, title):
-
-        self.args = args # from __builtin__
-        self.fd = os.fdopen(os.open(args.file, os.O_NONBLOCK))
-
         wx.Frame.__init__(self, None, title=title, size=(800,600))
         #self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -69,6 +65,8 @@ class Frame(wx.Frame):
 
 
     def poll(self, event):
+        if not hasattr(self, 'fd'):
+            self.fd = os.fdopen(os.open(args.file, os.O_NONBLOCK))
         for i in range(10):
             try:
                 data = self.fd.readline()

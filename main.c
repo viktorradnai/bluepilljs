@@ -138,7 +138,7 @@ static THD_FUNCTION(mlx90393_thread, arg)
 {
     (void)arg;
     int16_t data[3];
-    float buf[3] = { 0, 0, 0 };
+    int16_t buf[3] = { 0, 0, 0 };
     float hdg = 0;
 
     chRegSetThreadName("MLX90393 thread");
@@ -154,7 +154,7 @@ static THD_FUNCTION(mlx90393_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf("MLX90393 XYZ: %x %x %x\r\n", buf[0], buf[1], buf[2]);
+        printf("MLX90393 XYZ: %d %d %d\r\n", buf[0], buf[1], buf[2]);
         continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
@@ -169,7 +169,7 @@ static THD_FUNCTION(lsm303c_thread, arg)
 {
     (void)arg;
     int16_t data[3];
-    float buf[3] = { 0, 0, 0 };
+    int16_t buf[3] = { 0, 0, 0 };
     float hdg = 0;
 
     chRegSetThreadName("LSM303C thread");
@@ -184,7 +184,7 @@ static THD_FUNCTION(lsm303c_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf("LSM303C XYZ: %x %x %x\r\n", buf[0], buf[1], buf[2]);
+        printf("LSM303C XYZ: %d %d %d\r\n", buf[0], buf[1], buf[2]);
         continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
@@ -199,7 +199,7 @@ static THD_FUNCTION(lsm303dlhc_thread, arg)
 {
     (void)arg;
     int16_t data[3];
-    float buf[3] = { 0, 0, 0 };
+    int16_t buf[3] = { 0, 0, 0 };
     float hdg = 0;
 
     chRegSetThreadName("LSM303DLHC thread");
@@ -214,7 +214,7 @@ static THD_FUNCTION(lsm303dlhc_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf("LSM303DLHC XYZ: %x %x %x\r\n", buf[0], buf[1], buf[2]);
+        printf("LSM303DLHC XYZ: %d %d %d\r\n", buf[0], buf[1], buf[2]);
         continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
