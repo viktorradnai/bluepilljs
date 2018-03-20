@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os
 import sys
@@ -6,12 +6,12 @@ import time
 import errno
 import logging
 import argparse
-import __builtin__
 from threading import *
 
 import wx
 
-
+MSG_START = '>'
+MSG_END = "\n"
 logger = logging.getLogger(__name__)
 
 def parseCmdline():
@@ -35,6 +35,7 @@ def parseCmdline():
 
 
 class Frame(wx.Frame):
+    buf = ""
     def __init__(self, title):
         wx.Frame.__init__(self, None, title=title, size=(800,600))
         #self.Bind(wx.EVT_CLOSE, self.OnClose)
@@ -47,16 +48,16 @@ class Frame(wx.Frame):
 
         self.rows = {}
         for key in [ 'EMS22A', 'LSM303C', 'LSM303DLHC', 'MLX90393' ]:
-            m_text = wx.StaticText(panel, -1, "Hello World!")
+            m_text = wx.StaticText(panel, -1, "Waiting for data")
             m_text.SetFont(wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD))
             m_text.SetSize(m_text.GetBestSize())
-            box.Add(m_text, 0, wx.ALL, 10)
-            
+            box.Add(m_text, 0, wx.ALL, 15)
+
             self.rows[key] = m_text
 
         m_close = wx.Button(panel, wx.ID_CLOSE, "Close")
         m_close.Bind(wx.EVT_BUTTON, self.OnClose)
-        box.Add(m_close, 0, wx.ALL, 10)
+        box.Add(m_close, 0, wx.ALL, 15)
 
         panel.SetSizer(box)
         panel.Layout()
@@ -70,18 +71,39 @@ class Frame(wx.Frame):
         for i in range(10):
             try:
                 data = self.fd.readline()
-            except IOError, e:
+            except IOError as e:
                 if e.errno != errno.EAGAIN:
                     logger.debug(e.message)
                 return
-            if "device 1" in data: return
             if not len(data.strip()): return
-            try:
-                label = data.split()[0]
-            except:
-                logger.error("Error splitting input line %s", data)
-            if not label in self.rows: return
-            self.rows[label].SetLabel(data)
+            self.split(data)
+
+
+    def split(self, data):
+        entries = data.strip().split(MSG_START)
+        for e in entries[:-1]:
+            if len(e) == 0: continue
+            self.buf += MSG_START + e
+            logger.debug(self.buf)
+            start, end = self.buf.split(MSG_START, 1)
+            if len(end) > 0:
+                self.buf = end
+                self.parse(start)
+
+        self.parse(entries[-1])
+
+
+    def parse(self, data):
+        try:
+            label = data.split()[0]
+        except:
+            logger.error("Error splitting input line %s", data)
+            return
+
+        if not label in self.rows: return
+        if "device 1" in data: return
+
+        self.rows[label].SetLabel(data)
 
 
     def OnClose(self, event):
@@ -104,29 +126,9 @@ class MainApp(wx.App):
         return True
 
 
-class WorkerThread(Thread):
-    _want_abort = 0
-    def __init__(self):
-        Thread.__init__(self)
-        logger.debug("Thread init")
-        self.start()
-
-    def run(self):
-        logger.debug("Thread run")
-        with open(args.file) as f:
-            while not self._want_abort:
-                data = f.readline()
-                if not data:
-                    time.sleep(0.01)
-                    continue
-                logger.debug(data)
-
-
-    def abort(self):
-        self._want_abort = 1
-
 if __name__ == '__main__':
-    __builtin__.args = parseCmdline()
+    global args
+    args = parseCmdline()
 
     #app = wx.App(redirect=True)
     #top = Frame("Hello World")
