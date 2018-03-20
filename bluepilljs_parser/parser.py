@@ -3,8 +3,7 @@
 import os
 import sys
 import time
-import fcntl
-import select
+import errno
 import logging
 import argparse
 import __builtin__
@@ -50,15 +49,18 @@ class Frame(wx.Frame):
         panel = wx.Panel(self)
         box = wx.BoxSizer(wx.VERTICAL)
 
-        m_text = wx.StaticText(panel, -1, "Hello World!")
-        m_text.SetFont(wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD))
-        m_text.SetSize(m_text.GetBestSize())
-        self.m_text = m_text
-        box.Add(m_text, 0, wx.ALL, 10)
+        self.rows = {}
+        for key in [ 'EMS22A', 'LSM303C', 'LSM303DLHC', 'MLX90393' ]:
+            m_text = wx.StaticText(panel, -1, "Hello World!")
+            m_text.SetFont(wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD))
+            m_text.SetSize(m_text.GetBestSize())
+            box.Add(m_text, 0, wx.ALL, 10)
+            
+            self.rows[key] = m_text
 
-        #m_close = wx.Button(panel, wx.ID_CLOSE, "Close")
-        #m_close.Bind(wx.EVT_BUTTON, self.OnClose)
-        #box.Add(m_close, 0, wx.ALL, 10)
+        m_close = wx.Button(panel, wx.ID_CLOSE, "Close")
+        m_close.Bind(wx.EVT_BUTTON, self.OnClose)
+        box.Add(m_close, 0, wx.ALL, 10)
 
         panel.SetSizer(box)
         panel.Layout()
@@ -68,12 +70,20 @@ class Frame(wx.Frame):
 
     def poll(self, event):
         for i in range(10):
-            data = self.fd.readline()
-            if not data:
+            try:
+                data = self.fd.readline()
+            except IOError, e:
+                if e.errno != errno.EAGAIN:
+                    logger.debug(e.message)
                 return
-            logger.debug(data)
-            self.m_text.SetLabel(data)
-
+            if "device 1" in data: return
+            if not len(data.strip()): return
+            try:
+                label = data.split()[0]
+            except:
+                logger.error("Error splitting input line %s", data)
+            if not label in self.rows: return
+            self.rows[label].SetLabel(data)
 
 
     def OnClose(self, event):

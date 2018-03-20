@@ -10,7 +10,7 @@ extern SerialUSBDriver SDU1;
 
 bool_t lsm303c_init(void)
 {
-    uint8_t ident_out = 0x0F; // Highest speed
+    uint8_t ident_out = 0x0F; // WHO_AM_I register
     uint8_t ident_in;
     uint8_t out1[] = { 0x20, 0x7C }; // Highest speed
     uint8_t out2[] = { 0x21, 0x60 }; // Lowest gain
