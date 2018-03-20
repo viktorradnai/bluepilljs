@@ -7,6 +7,8 @@
 #define MLX90393_CMD_MEASURE_XYZ 0x3E
 #define MLX90393_CMD_READ_XYZ 0x4E
 
+#define MLX90393_TCMP_EN 0
+
 
 typedef int bool_t;
 

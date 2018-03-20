@@ -59,7 +59,7 @@ static const ShellConfig shell_cfg1 = {
   commands
 };
 
-static void usb_init(void) {
+void usb_init(void) {
     usbInitState = 0;
     sduObjectInit(&SDU1);
     sduStart(&SDU1, &serusbcfg);
@@ -136,7 +136,7 @@ static THD_FUNCTION(mlx90393_thread, arg)
 {
     (void)arg;
     int16_t data[3];
-    int16_t buf[3] = { 0, 0, 0 };
+    //int16_t buf[3] = { 0, 0, 0 };
     float hdg = 0;
 
     chRegSetThreadName("MLX90393 thread");
@@ -149,13 +149,13 @@ static THD_FUNCTION(mlx90393_thread, arg)
     while(1) {
         mlx90393_read(data);
 
-        buf[0] = (buf[0] * 7 + data[0]) / 8;
-        buf[1] = (buf[1] * 7 + data[1]) / 8;
+        //buf[0] = (buf[0] * 7 + data[0]) / 8;
+        //buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf("ML393 %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
+        printf("ML393 %05d %05d %05d\r\n", data[0], data[1], data[2]);
         continue;
 
-        hdg = xy_to_hdg(buf[0], buf[1]);
+        hdg = xy_to_hdg(data[0], data[1]);
         hid_in_data.x = (int8_t) hdg;
         hid_in_data.button = read_buttons();
         hid_transmit(&USBD1);
@@ -182,7 +182,7 @@ static THD_FUNCTION(lsm303c_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf(">L303C  %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
+        printf(">L303C %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
         continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
@@ -272,7 +272,7 @@ int main(void) {
 
     while(1) {
         // chprintf((BaseSequentialStream *)&SDU1, "Idle");
-
+#if 0
         if (!shelltp) {
             if (SDU1.config->usbp->state == USB_ACTIVE) {
                 /* Spawns a new shell.*/
@@ -286,6 +286,7 @@ int main(void) {
                 shelltp = NULL;
             }
         }
+#endif // 0
         chThdSleepMilliseconds(5);
     }
     return 0;

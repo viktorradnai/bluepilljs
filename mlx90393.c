@@ -12,8 +12,8 @@ bool_t mlx90393_init(void)
     // Address must be shifted up by 2 bits
 
     uint8_t out1[] = { MLX90393_CMD_WRITE_REG, 0x00, 0x5C, 0x00 << 2 }; // GAIN_SEL = 0x5, HALLCONF = 0xC
-    uint8_t out2[] = { MLX90393_CMD_WRITE_REG, 0x04, 0x00, 0x01 << 2 }; // TCMP_EN = 1
-    uint8_t out3[] = { MLX90393_CMD_WRITE_REG, 0x02, 0xB4, 0x02 << 2 }; // RES_XYZ = 0b010101, DIG_FILT = 0b100
+    uint8_t out2[] = { MLX90393_CMD_WRITE_REG, MLX90393_TCMP_EN << 2, 0x00, 0x01 << 2 };
+    uint8_t out3[] = { MLX90393_CMD_WRITE_REG, 0x02, 0xA8, 0x02 << 2 }; // RES_XYZ = 0b010101, DIG_FILT = 0b101
     uint8_t out4[] = { MLX90393_CMD_READ_REG, 0x02 << 2 };
     uint8_t in[4];
 
@@ -33,14 +33,24 @@ bool_t mlx90393_read(int16_t* data)
     // Start single measurement
     if (!i2c_write(MLX90393_I2C_ADDR, out1, sizeof(out1), in, 2)) return FALSE;
 
-    chThdSleepMilliseconds(100);
+    // Conversion time = 0.63ms * (2 + 2^DIG_FILT) * 3
+    chThdSleepMilliseconds(20);
 
     // Fetch result
     if (!i2c_write(MLX90393_I2C_ADDR, out2, sizeof(out2), in, sizeof(in))) return FALSE;
 
+#if MLX90393_TCMP_EN
+    int32_t tmp;
+    tmp = (in[3] << 8) | in[2];
+    data[0] = (int16_t) (tmp - 32768);
+    tmp = (in[5] << 8) | in[4];
+    data[1] = (int16_t) (tmp - 32768);
+    tmp = (in[7] << 8) | in[6];
+    data[2] = (int16_t) (tmp - 32768);
+#else
     data[0] = (in[3] << 8) | in[2];
     data[1] = (in[5] << 8) | in[4];
     data[2] = (in[7] << 8) | in[6];
-
+#endif // MLX90393_TCMP_EN
     return TRUE;
 }

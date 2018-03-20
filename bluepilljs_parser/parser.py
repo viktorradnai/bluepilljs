@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
 import os
+import re
 import sys
+import math
 import time
 import errno
 import logging
@@ -36,6 +38,7 @@ def parseCmdline():
 
 class Frame(wx.Frame):
     buf = ""
+    values = {}
     def __init__(self, title):
         wx.Frame.__init__(self, None, title=title, size=(800,600))
         #self.Bind(wx.EVT_CLOSE, self.OnClose)
@@ -47,7 +50,8 @@ class Frame(wx.Frame):
         box = wx.BoxSizer(wx.VERTICAL)
 
         self.rows = {}
-        for key in [ 'E22A0', 'E22A1', 'L303C', 'L303D', 'ML393' ]:
+        #for key in [ 'E22A0', 'E22A1', 'L303C', 'L303D', 'ML393' ]:
+        for key in [ 'E22A0', 'L303D', 'ML393' ]:
             m_text = wx.StaticText(panel, -1, "Waiting for data")
             m_text.SetFont(wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD))
             m_text.SetSize(m_text.GetBestSize())
@@ -67,7 +71,12 @@ class Frame(wx.Frame):
 
     def poll(self, event):
         if not hasattr(self, 'fd'):
-            self.fd = os.fdopen(os.open(args.file, os.O_NONBLOCK))
+            try:
+                self.fd = os.fdopen(os.open(args.file, os.O_NONBLOCK))
+            except IOError as e:
+                if e.errno != errno.EBUSY:
+                    logger.debug(e)
+                return
         for i in range(10):
             try:
                 data = self.fd.readline()
@@ -84,7 +93,6 @@ class Frame(wx.Frame):
         for e in entries[:-1]:
             if len(e) == 0: continue
             self.buf += MSG_START + e
-            logger.debug(self.buf)
             start, end = self.buf.split(MSG_START, 1)
             if len(end) > 0:
                 self.buf = end
@@ -94,16 +102,52 @@ class Frame(wx.Frame):
 
 
     def parse(self, data):
+        if len(data) == 0: return
         try:
-            label = data.split()[0]
+            fields = data.split()
+            label = fields[0]
         except:
             logger.error("Error splitting input line %s", data)
             return
 
         if not label in self.rows: return
-        if "device 1" in data: return
+        if not label in self.values: self.values[label] = {}
+        if label == 'E22A0':
+            if len(data) != 10:
+                logger.info("Incorrect length data (%d) from %s: '%s'", len(data), label, data)
+                return
 
-        self.rows[label].SetLabel(data)
+            angle = (float(fields[1]) - 512) * math.pi / 512
+            x = math.sin(angle) * 2**16
+            y = math.cos(angle) * 2**16
+            z = 0
+        else:
+            if not re.match('\w{5} (-\d{4}|-?\d{5}) (-\d{4}|-?\d{5}) (-\d{4}|-?\d{5})', data):
+                logger.info("Incorrect length data (%d) from %s: '%s'", len(data), label, data)
+                return
+
+            x = float(fields[1])
+            y = float(fields[2])
+            z = float(fields[3])
+            if label != 'ML393':
+                x *= 2**6
+                y *= 2**6
+            angle = math.atan2(x, y)
+            if z != 0:
+                logger.warn("%s Non-zero Z value %d", label, z)
+
+        self.values[label]['angle'] = angle
+        self.values[label]['x'] = x
+        self.values[label]['y'] = y
+
+        self.rows[label].SetLabel("{0}: {1: 3.2f} {2: 5.2f} {3: 5.2f}".format(label, math.degrees(angle), x, y))
+
+        tmp = ""
+        for label in self.rows:
+            if self.rows[label].GetLabel() == "Waiting for data": return
+            tmp += self.rows[label].GetLabel() + ' '
+        log.write(tmp + "\n")
+
 
 
     def OnClose(self, event):
@@ -129,7 +173,8 @@ class MainApp(wx.App):
 if __name__ == '__main__':
     global args
     args = parseCmdline()
-
+    global log
+    log = open("parser.log", "w")
     #app = wx.App(redirect=True)
     #top = Frame("Hello World")
     #top.Show()
