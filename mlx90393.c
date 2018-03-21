@@ -17,10 +17,10 @@ bool_t mlx90393_init(void)
     uint8_t out4[] = { MLX90393_CMD_READ_REG, 0x02 << 2 };
     uint8_t in[4];
 
-    if (!i2c_write(MLX90393_I2C_ADDR, out1, sizeof(out1), in, 2)) return FALSE;
-    if (!i2c_write(MLX90393_I2C_ADDR, out2, sizeof(out2), in, 2)) return FALSE;
-    if (!i2c_write(MLX90393_I2C_ADDR, out3, sizeof(out3), in, 2)) return FALSE;
-    return i2c_write(MLX90393_I2C_ADDR, out4, sizeof(out4), in, 4);
+    if (!i2c_write(&I2CD1, MLX90393_I2C_ADDR, out1, sizeof(out1), in, 2)) return FALSE;
+    if (!i2c_write(&I2CD1, MLX90393_I2C_ADDR, out2, sizeof(out2), in, 2)) return FALSE;
+    if (!i2c_write(&I2CD1, MLX90393_I2C_ADDR, out3, sizeof(out3), in, 2)) return FALSE;
+    return i2c_write(&I2CD1, MLX90393_I2C_ADDR, out4, sizeof(out4), in, 4);
 }
 
 bool_t mlx90393_read(int16_t* data)
@@ -31,13 +31,13 @@ bool_t mlx90393_read(int16_t* data)
     uint8_t out2[] = { MLX90393_CMD_READ_XYZ };
 
     // Start single measurement
-    if (!i2c_write(MLX90393_I2C_ADDR, out1, sizeof(out1), in, 2)) return FALSE;
+    if (!i2c_write(&I2CD1, MLX90393_I2C_ADDR, out1, sizeof(out1), in, 2)) return FALSE;
 
     // Conversion time = 0.63ms * (2 + 2^DIG_FILT) * 3
     chThdSleepMilliseconds(20);
 
     // Fetch result
-    if (!i2c_write(MLX90393_I2C_ADDR, out2, sizeof(out2), in, sizeof(in))) return FALSE;
+    if (!i2c_write(&I2CD1, MLX90393_I2C_ADDR, out2, sizeof(out2), in, sizeof(in))) return FALSE;
 
 #if MLX90393_TCMP_EN
     int32_t tmp;

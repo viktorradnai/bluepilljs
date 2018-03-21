@@ -172,12 +172,12 @@ static THD_FUNCTION(lsm303c_thread, arg)
 
     chRegSetThreadName("LSM303C thread");
 
-    if(!lsm303c_init()) {
+    if(!lsm303c_init(&I2CD2)) {
         printf("LSM303C not found\r\n");
         chThdExit(0);
     }
     while(1) {
-        lsm303c_read(data);
+        lsm303c_read(&I2CD2, data);
 
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
@@ -202,12 +202,12 @@ static THD_FUNCTION(lsm303dlhc_thread, arg)
 
     chRegSetThreadName("LSM303DLHC thread");
 
-    if(!lsm303dlhc_init()) {
+    if(!lsm303dlhc_init(&I2CD1)) {
         printf("LSM303DLHC not found\r\n");
         chThdExit(0);
     }
     while(1) {
-        lsm303dlhc_read(data);
+        lsm303dlhc_read(&I2CD1, data);
 
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
@@ -258,6 +258,7 @@ int main(void) {
     shellInit();
 
     i2cStart(&I2CD1, &i2cconfig);
+    i2cStart(&I2CD2, &i2cconfig);
     spiStart(&SPID1, &spicfg);
     usb_init();
 

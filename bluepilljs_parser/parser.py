@@ -51,7 +51,7 @@ class Frame(wx.Frame):
 
         self.rows = {}
         #for key in [ 'E22A0', 'E22A1', 'L303C', 'L303D', 'ML393' ]:
-        for key in [ 'E22A0', 'L303D', 'ML393' ]:
+        for key in [ 'E22A0', 'L303C', 'L303D', 'ML393' ]:
             m_text = wx.StaticText(panel, -1, "Waiting for data")
             m_text.SetFont(wx.Font(14, wx.SWISS, wx.NORMAL, wx.BOLD))
             m_text.SetSize(m_text.GetBestSize())
@@ -133,8 +133,8 @@ class Frame(wx.Frame):
                 x *= 2**6
                 y *= 2**6
             angle = math.atan2(x, y)
-            if z != 0:
-                logger.warn("%s Non-zero Z value %d", label, z)
+            #if z != 0:
+            #    logger.warn("%s Non-zero Z value %d", label, z)
 
         self.values[label]['angle'] = angle
         self.values[label]['x'] = x

@@ -101,10 +101,11 @@
  * Port B setup.
  * Everything input with pull-up except:
  * PB6, PB7 - I2C SCL and SDA
+ * PB10, PB11 - I2C SCL and SDA
  * PB12-15 - SPI
  */
 #define VAL_GPIOBCRL            0xEE888888      /*  PB7...PB0 */
-#define VAL_GPIOBCRH            0xBBB38888      /* PB15...PB8 */
+#define VAL_GPIOBCRH            0xBBB3EE88      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
 
 /*
