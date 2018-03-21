@@ -117,9 +117,9 @@ class Frame(wx.Frame):
                 logger.info("Incorrect length data (%d) from %s: '%s'", len(data), label, data)
                 return
 
-            angle = (float(fields[1]) - 512) * math.pi / 512
-            x = math.sin(angle) * 2**16
-            y = math.cos(angle) * 2**16
+            angle = -(float(fields[1]) - 512) * math.pi / 512
+            x = math.sin(angle) * 2**15
+            y = math.cos(angle) * 2**15
             z = 0
         else:
             if not re.match('\w{5} (-\d{4}|-?\d{5}) (-\d{4}|-?\d{5}) (-\d{4}|-?\d{5})', data):
@@ -129,9 +129,16 @@ class Frame(wx.Frame):
             x = float(fields[1])
             y = float(fields[2])
             z = float(fields[3])
-            if label != 'ML393':
-                x *= 2**6
-                y *= 2**6
+            if label == 'L303D':
+                x *= 2**5
+                y *= 2**5
+            elif label == 'L303C':
+                tmp = x
+                x = -y
+                y = -tmp
+            elif label == 'ML393':
+                pass
+
             angle = math.atan2(x, y)
             #if z != 0:
             #    logger.warn("%s Non-zero Z value %d", label, z)
