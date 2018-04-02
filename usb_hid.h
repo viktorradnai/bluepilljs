@@ -21,7 +21,7 @@ typedef int bool_t;
  */
 //#define HID_CONTROL_EP_ADDRESS    0   /* Implicit */
 #define HID_IN_EP_ADDRESS       3   /* Interrupt. Mandatory */
-#define HID_OUT_EP_ADDRESS      2   /* Interrupt. Optional */
+#define HID_OUT_EP_ADDRESS      4   /* Interrupt. Optional */
 #define USBD1_DATA_REQUEST_EP           1
 #define USBD1_DATA_AVAILABLE_EP         1
 #define USBD1_INTERRUPT_REQUEST_EP      2
