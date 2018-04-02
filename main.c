@@ -14,6 +14,8 @@
 
 /* Virtual serial port over USB */
 SerialUSBDriver SDU1;
+extern const USBConfig usbcfg;
+extern SerialUSBConfig serusbcfg;
 
 /* I2C1 config */
 static const I2CConfig i2cconfig = {
@@ -65,7 +67,7 @@ void usb_init(void) {
     sduStart(&SDU1, &serusbcfg);
 
     usbDisconnectBus(&USBD1);
-    chThdSleepMilliseconds(1000);
+    chThdSleepMilliseconds(1500);
     usbStart(&USBD1, &usbcfg);
 
     usbConnectBus(&USBD1);

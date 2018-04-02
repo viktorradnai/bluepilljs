@@ -69,19 +69,19 @@ bool_t hidRequestsHook(USBDriver *usbp){
             palSetPad(GPIOE, 12);
             hid_in_data.x = 0;
             hid_in_data.button = 0;
-            usbSetupTransfer(usbp,(uint8_t *)&hid_in_data,sizeof(hid_in_data), NULL);
+            usbSetupTransfer(usbp, (uint8_t *) &hid_in_data, sizeof(hid_in_data), NULL);
             usbInitState = 1;
             return TRUE;
         case HID_GET_IDLE_REQUEST:
-            usbSetupTransfer(usbp,NULL,0, NULL);
+            usbSetupTransfer(usbp, NULL, 0, NULL);
             return TRUE;
         case HID_GET_PROTOCOL_REQUEST:
             return TRUE;
         case HID_SET_REPORT_REQUEST:
-            usbSetupTransfer(usbp,NULL,0, NULL);
+            usbSetupTransfer(usbp, NULL, 0, NULL);
             return TRUE;
         case HID_SET_IDLE_REQUEST:
-            usbSetupTransfer(usbp,NULL,0, NULL);
+            usbSetupTransfer(usbp, NULL, 0, NULL);
             return TRUE;
         case HID_SET_PROTOCOL_REQUEST:
             return TRUE;
@@ -102,7 +102,6 @@ bool_t hidRequestsHook(USBDriver *usbp){
 void hidDataTransmitted(USBDriver *usbp, usbep_t ep){
     (void)usbp;
     (void)ep;
-    //hid_transmit(usbp,&hid_in_data);
 }
 
 
