@@ -294,49 +294,36 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp, uint8_t dtype, uint8
 }
 
 /* USART device endpoints */
-
-/**
- * @brief   IN EP1 state.
- */
-static USBInEndpointState ep1instate;
-
-/**
- * @brief   OUT EP1 state.
- */
-static USBOutEndpointState ep1outstate;
-
 /**
  * @brief   EP1 initialization structure (both IN and OUT).
  */
-static const USBEndpointConfig ep1config = {
+static USBInEndpointState cdc_data_in_state;
+static USBOutEndpointState cdc_data_out_state;
+static const USBEndpointConfig cdc_data_ep_cfg = {
     USB_EP_MODE_TYPE_BULK,
     NULL,
     sduDataTransmitted,
     sduDataReceived,
     0x0040,
     0x0040,
-    &ep1instate,
-    &ep1outstate,
+    &cdc_data_in_state,
+    &cdc_data_out_state,
     2,
     NULL
 };
 
 /**
- * @brief   IN EP2 state.
- */
-static USBInEndpointState ep2instate;
-
-/**
  * @brief   EP2 initialization structure (IN only).
  */
-static const USBEndpointConfig ep2config = {
+static USBInEndpointState cdc_int_in_state;
+static const USBEndpointConfig cdc_int_ep_cfg = {
     USB_EP_MODE_TYPE_INTR,
     NULL,
     sduInterruptTransmitted,
     NULL,
     0x0010,
     0x0000,
-    &ep2instate,
+    &cdc_int_in_state,
     NULL,
     1,
     NULL
@@ -344,33 +331,36 @@ static const USBEndpointConfig ep2config = {
 
 
 /* HID device endpoints */
-
-static USBInEndpointState ep3instate;
-//      EndPoint Initialization. INTERRUPT IN. Device -> Host
-static const USBEndpointConfig ep3config = {
+/**
+ * @brief   EP3 initialization structure (IN only).
+ */
+static USBInEndpointState hid_in_state;
+static const USBEndpointConfig hid_in_ep_cfg = {
     USB_EP_MODE_TYPE_INTR,
     NULL,
     hidDataTransmitted,
     NULL,
     0x0004,
     0x0000,
-    &ep3instate,
+    &hid_in_state,
     NULL,
     1,
     NULL
 };
 
-static USBOutEndpointState ep4outstate;
-//      EndPoint Initialization. INTERRUPT IN. Device -> Host
-static const USBEndpointConfig ep4config = {
-    USB_EP_MODE_TYPE_INTR,
+/**
+ * @brief   EP4 initialization structure (OUT only).
+ */
+static USBOutEndpointState hid_out_state;
+static const USBEndpointConfig hid_out_ep_cfg = {
+ USB_EP_MODE_TYPE_INTR,
     NULL,
     NULL,
     hidDataReceived,
     0x0000,
     0x0004,
     NULL,
-    &ep4outstate,
+    &hid_out_state,
     1,
     NULL
 };
@@ -393,11 +383,11 @@ static void usb_event(USBDriver *usbp, usbevent_t event)
         /* Enables the endpoints specified into the configuration.
            Note, this callback is invoked from an ISR so I-Class functions
            must be used.*/
-        usbInitEndpointI(usbp, USBD1_DATA_REQUEST_EP, &ep1config);
-        usbInitEndpointI(usbp, USBD1_INTERRUPT_REQUEST_EP, &ep2config);
+        usbInitEndpointI(usbp, USBD1_DATA_REQUEST_EP, &cdc_data_ep_cfg);
+        usbInitEndpointI(usbp, USBD1_INTERRUPT_REQUEST_EP, &cdc_int_ep_cfg);
 
-        usbInitEndpointI(usbp, HID_IN_EP_ADDRESS, &ep3config);
-        usbInitEndpointI(usbp, HID_OUT_EP_ADDRESS, &ep4config);
+        usbInitEndpointI(usbp, HID_IN_EP_ADDRESS, &hid_in_ep_cfg);
+        usbInitEndpointI(usbp, HID_OUT_EP_ADDRESS, &hid_out_ep_cfg);
 
         /* Resetting the state of the CDC subsystem.*/
         sduConfigureHookI(&SDU1);
