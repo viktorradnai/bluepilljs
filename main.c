@@ -224,6 +224,30 @@ static THD_FUNCTION(lsm303dlhc_thread, arg)
     }
 }
 
+static THD_WORKING_AREA(dummy_thread_wa, 512);
+static THD_FUNCTION(dummy_thread, arg)
+{
+    (void)arg;
+    int8_t hdg = 0;
+    int8_t add = 1;
+
+    chRegSetThreadName("Dummy thread");
+
+    while(1) {
+        if (hdg == 127) add = -1;
+        if (hdg == -128) add = 1;
+
+        hdg += add;
+        printf(">DUMMY %05d %05d\r\n", hdg, add);
+
+        hid_in_data.x = (int8_t) hdg;
+        hid_in_data.button = read_buttons();
+        hid_transmit(&USBD1);
+
+        chThdSleepMilliseconds(10);
+    }
+}
+
 static THD_WORKING_AREA(ems22a_thread_wa, 256);
 static THD_FUNCTION(ems22a_thread, p) {
     /*
@@ -267,10 +291,11 @@ int main(void) {
     chprintf((BaseSequentialStream *)&SDU1, "Sleeping for 5 seconds");
     chThdSleepMilliseconds(5000);
 
-    chThdCreateStatic(mlx90393_thread_wa, sizeof(mlx90393_thread_wa), NORMALPRIO + 4, mlx90393_thread, NULL);
-    chThdCreateStatic(lsm303c_thread_wa, sizeof(lsm303c_thread_wa), NORMALPRIO + 3, lsm303c_thread, NULL);
-    chThdCreateStatic(lsm303dlhc_thread_wa, sizeof(lsm303dlhc_thread_wa), NORMALPRIO + 2, lsm303dlhc_thread, NULL);
-    chThdCreateStatic(ems22a_thread_wa, sizeof(ems22a_thread_wa), NORMALPRIO + 1, ems22a_thread, NULL);
+    //chThdCreateStatic(mlx90393_thread_wa, sizeof(mlx90393_thread_wa), NORMALPRIO + 4, mlx90393_thread, NULL);
+    //chThdCreateStatic(lsm303c_thread_wa, sizeof(lsm303c_thread_wa), NORMALPRIO + 3, lsm303c_thread, NULL);
+    //chThdCreateStatic(lsm303dlhc_thread_wa, sizeof(lsm303dlhc_thread_wa), NORMALPRIO + 2, lsm303dlhc_thread, NULL);
+    chThdCreateStatic(dummy_thread_wa, sizeof(dummy_thread_wa), NORMALPRIO + 1, dummy_thread, NULL);
+    //chThdCreateStatic(ems22a_thread_wa, sizeof(ems22a_thread_wa), NORMALPRIO + 1, ems22a_thread, NULL);
 
 
     while(1) {
