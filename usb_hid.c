@@ -24,26 +24,29 @@
 #include "ch.h"
 #include "hal.h"
 #include "usb_hid.h"
+#include "usbcfg.h"
 
 hid_data hid_in_data = { 0, 0 };
 hid_data hid_out_data = { 0, 0 };
 uint8_t usbInitState = 0;
 
 
-void hid_receive(USBDriver *usbp) {
+void hid_receive(USBDriver *usbp)
+{
     chSysLockFromISR();
     usbStartReceiveI(usbp, HID_OUT_EP_ADDRESS, (uint8_t *)&hid_out_data, sizeof (hid_out_data));
     chSysUnlockFromISR();
 }
 
-void hid_transmit(USBDriver *usbp) {
+void hid_transmit(USBDriver *usbp)
+{
     chSysLockFromISR();
     usbStartTransmitI(usbp, HID_IN_EP_ADDRESS, (uint8_t *)&hid_in_data, sizeof (hid_in_data));
     chSysUnlockFromISR();
 }
 
-bool_t hidRequestsHook(USBDriver *usbp){
-
+bool_t hidRequestsHook(USBDriver *usbp)
+{
     const USBDescriptor *dp;
     if ((usbp->setup[0] & (USB_RTYPE_TYPE_MASK | USB_RTYPE_RECIPIENT_MASK)) ==
         (USB_RTYPE_TYPE_STD | USB_RTYPE_RECIPIENT_INTERFACE)) {
@@ -97,16 +100,17 @@ bool_t hidRequestsHook(USBDriver *usbp){
 }
 
 
-
 // Callback for THE IN ENDPOINT (INTERRUPT). Device -> HOST
-void hidDataTransmitted(USBDriver *usbp, usbep_t ep){
+void hidDataTransmitted(USBDriver *usbp, usbep_t ep)
+{
     (void)usbp;
     (void)ep;
 }
 
 
 // Callback for THE OUT ENDPOINT (INTERRUPT)
-void hidDataReceived(USBDriver *usbp, usbep_t ep){
+void hidDataReceived(USBDriver *usbp, usbep_t ep)
+{
     (void)usbp;
     (void)ep;
 }

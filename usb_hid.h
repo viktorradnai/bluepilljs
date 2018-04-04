@@ -15,18 +15,6 @@ typedef int bool_t;
 #ifndef _USB_HID_H_
 #define _USB_HID_H_
 
-
-/*
- * Endpoints to be used for USBD1.
- */
-//#define HID_CONTROL_EP_ADDRESS    0   /* Implicit */
-#define HID_IN_EP_ADDRESS       3   /* Interrupt. Mandatory */
-#define HID_OUT_EP_ADDRESS      4   /* Interrupt. Optional */
-#define USBD1_DATA_REQUEST_EP           1
-#define USBD1_DATA_AVAILABLE_EP         1
-#define USBD1_INTERRUPT_REQUEST_EP      2
-
-
 /* HID Class Specific Requests */
 #define HID_GET_REPORT_REQUEST      0x01
 #define HID_GET_IDLE_REQUEST        0x02

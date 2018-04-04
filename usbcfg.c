@@ -25,15 +25,10 @@
 #include "ch.h"
 #include "hal.h"
 #include "usb_hid.h"
+#include "usbcfg.h"
+
 #define USB_DESCRIPTOR_REPORT 0x22
 
-extern SerialUSBDriver SDU1;
-/*===========================================================================*/
-/* USB related stuff.                                                        */
-/*===========================================================================*/
-
-/* For a better understanding look at http://www.beyondlogic.org/usbnutshell/usb1.shtml */
-/* Reference: [DCDHID] USB - Device Class Definition for Human Interface Devices (HID)  */
 /*
  * USB Device Descriptor.
  */
@@ -207,7 +202,6 @@ static const USBDescriptor cdc_configuration_descriptor = {
     cdc_configuration_descriptor_data
 };
 
-
 /*
  * U.S. English language identifier.
  */
@@ -253,8 +247,6 @@ static const uint8_t hid_string3[] = {
 /*
  * Interface string.
  */
-
-
 static const uint8_t hid_string4[] = {
     USB_DESC_BYTE(16),                    /* bLength.                             */
     USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                     */
@@ -353,7 +345,7 @@ static const USBEndpointConfig hid_in_ep_cfg = {
  */
 static USBOutEndpointState hid_out_state;
 static const USBEndpointConfig hid_out_ep_cfg = {
- USB_EP_MODE_TYPE_INTR,
+    USB_EP_MODE_TYPE_INTR,
     NULL,
     NULL,
     hidDataReceived,
@@ -370,38 +362,36 @@ static const USBEndpointConfig hid_out_ep_cfg = {
  */
 static void usb_event(USBDriver *usbp, usbevent_t event)
 {
-    extern SerialUSBDriver SDU1;
-
     switch(event) {
-    case USB_EVENT_RESET:
-        return;
-    case USB_EVENT_ADDRESS:
-        return;
-    case USB_EVENT_CONFIGURED:
-        chSysLockFromISR();
+        case USB_EVENT_RESET:
+            return;
+        case USB_EVENT_ADDRESS:
+            return;
+        case USB_EVENT_CONFIGURED:
+            chSysLockFromISR();
 
-        /* Enables the endpoints specified into the configuration.
-           Note, this callback is invoked from an ISR so I-Class functions
-           must be used.*/
-        usbInitEndpointI(usbp, USBD1_DATA_REQUEST_EP, &cdc_data_ep_cfg);
-        usbInitEndpointI(usbp, USBD1_INTERRUPT_REQUEST_EP, &cdc_int_ep_cfg);
+            /* Enables the endpoints specified into the configuration.
+               Note, this callback is invoked from an ISR so I-Class functions
+               must be used.*/
+            usbInitEndpointI(usbp, USBD1_DATA_REQUEST_EP, &cdc_data_ep_cfg);
+            usbInitEndpointI(usbp, USBD1_INTERRUPT_REQUEST_EP, &cdc_int_ep_cfg);
 
-        usbInitEndpointI(usbp, HID_IN_EP_ADDRESS, &hid_in_ep_cfg);
-        usbInitEndpointI(usbp, HID_OUT_EP_ADDRESS, &hid_out_ep_cfg);
+            usbInitEndpointI(usbp, HID_IN_EP_ADDRESS, &hid_in_ep_cfg);
+            usbInitEndpointI(usbp, HID_OUT_EP_ADDRESS, &hid_out_ep_cfg);
 
-        /* Resetting the state of the CDC subsystem.*/
-        sduConfigureHookI(&SDU1);
+            /* Resetting the state of the CDC subsystem.*/
+            sduConfigureHookI(&SDU1);
 
-        chSysUnlockFromISR();
-        return;
-    case USB_EVENT_SUSPEND:
-        return;
-    case USB_EVENT_WAKEUP:
-        return;
-    case USB_EVENT_STALLED:
-        return;
-    case USB_EVENT_UNCONFIGURED:
-        return;
+            chSysUnlockFromISR();
+            return;
+        case USB_EVENT_UNCONFIGURED:
+            return;
+        case USB_EVENT_SUSPEND:
+            return;
+        case USB_EVENT_WAKEUP:
+            return;
+        case USB_EVENT_STALLED:
+            return;
     }
     return;
 }
