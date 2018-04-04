@@ -4,6 +4,7 @@
 #define usb_lld_connect_bus(usbp)
 #define usb_lld_disconnect_bus(usbp)
 extern SerialUSBDriver SDU1;
+extern uint8_t usbInitState;
 
 /*
  * Endpoints to be used for USBD1.

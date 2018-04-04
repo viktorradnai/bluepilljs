@@ -140,8 +140,6 @@ typedef struct {
     uint8_t button;
 } hid_data;
 
-extern uint8_t usbInitState;
-
 extern hid_data hid_in_data;
 extern hid_data hid_out_data;
 extern hid_usb_state_t hid_state;

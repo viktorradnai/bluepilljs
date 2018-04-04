@@ -277,6 +277,7 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp, uint8_t dtype, uint8
         case USB_DESCRIPTOR_REPORT:
             //palSetPadMode(GPIOD, 12, PAL_MODE_OUTPUT_PUSHPULL);
             //palSetPad(GPIOD, 12);
+            usbInitState = 1;
             return &hid_generic_joystick_reporter;
         case USB_DESCRIPTOR_STRING:
             if (dindex < 5)
