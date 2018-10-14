@@ -174,18 +174,18 @@ static THD_FUNCTION(lsm303c_thread, arg)
 
     chRegSetThreadName("LSM303C thread");
 
-    if(!lsm303c_init(&I2CD2)) {
+    if(!lsm303c_init(&I2CD1)) {
         printf("LSM303C not found\r\n");
         chThdExit(0);
     }
     while(1) {
-        lsm303c_read(&I2CD2, data);
+        lsm303c_read(&I2CD1, data);
 
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf(">L303C %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
-        continue;
+        // printf(">L303C %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
+        // continue;
 
         hdg = xy_to_hdg(buf[0], buf[1]);
         hid_in_data.x = (int8_t) hdg;
@@ -292,9 +292,9 @@ int main(void) {
     chThdSleepMilliseconds(5000);
 
     //chThdCreateStatic(mlx90393_thread_wa, sizeof(mlx90393_thread_wa), NORMALPRIO + 4, mlx90393_thread, NULL);
-    //chThdCreateStatic(lsm303c_thread_wa, sizeof(lsm303c_thread_wa), NORMALPRIO + 3, lsm303c_thread, NULL);
+    chThdCreateStatic(lsm303c_thread_wa, sizeof(lsm303c_thread_wa), NORMALPRIO + 3, lsm303c_thread, NULL);
     //chThdCreateStatic(lsm303dlhc_thread_wa, sizeof(lsm303dlhc_thread_wa), NORMALPRIO + 2, lsm303dlhc_thread, NULL);
-    chThdCreateStatic(dummy_thread_wa, sizeof(dummy_thread_wa), NORMALPRIO + 1, dummy_thread, NULL);
+    //chThdCreateStatic(dummy_thread_wa, sizeof(dummy_thread_wa), NORMALPRIO + 1, dummy_thread, NULL);
     //chThdCreateStatic(ems22a_thread_wa, sizeof(ems22a_thread_wa), NORMALPRIO + 1, ems22a_thread, NULL);
 
 
