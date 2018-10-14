@@ -2,18 +2,20 @@
 #include "ch.h"
 #include "chprintf.h"
 
-void cmd_mem(BaseSequentialStream *chp, int argc, char *argv[]) {
-  size_t n, size;
+#define SHELL_NEWLINE_STR "\n"
+static void cmd_mem(BaseSequentialStream *chp, int argc, char *argv[]) {
+  size_t n, total, largest;
 
   (void)argv;
   if (argc > 0) {
-    chprintf(chp, "Usage: mem\r\n");
+    shellUsage(chp, "mem");
     return;
   }
-  n = chHeapStatus(NULL, &size);
-  chprintf(chp, "core free memory : %u bytes\r\n", chCoreGetStatusX());
-  chprintf(chp, "heap fragments   : %u\r\n", n);
-  chprintf(chp, "heap free total  : %u bytes\r\n", size);
+  n = chHeapStatus(NULL, &total, &largest);
+  chprintf(chp, "core free memory : %u bytes" SHELL_NEWLINE_STR, chCoreGetStatusX());
+  chprintf(chp, "heap fragments   : %u" SHELL_NEWLINE_STR, n);
+  chprintf(chp, "heap free total  : %u bytes" SHELL_NEWLINE_STR, total);
+  chprintf(chp, "heap free largest: %u bytes" SHELL_NEWLINE_STR, largest);
 }
 
 void cmd_threads(BaseSequentialStream *chp, int argc, char *argv[]) {

@@ -4,7 +4,7 @@
 
 #include "usb_hid.h"
 #include "usbcfg.h"
-#include "cmd.h"
+#include "shell_cmd.h"
 #include "ems22a.h"
 #include "mlx90393.h"
 #include "lsm303.h"
