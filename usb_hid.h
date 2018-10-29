@@ -10,8 +10,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 */
-typedef int bool_t;
-
 #ifndef _USB_HID_H_
 #define _USB_HID_H_
 
@@ -150,7 +148,7 @@ extern "C" {
 #endif
 extern void hid_receive(USBDriver *usbp);
 extern void hid_transmit(USBDriver *usbp) ;
-extern bool_t hidRequestsHook(USBDriver *usbp);
+extern bool hidRequestsHook(USBDriver *usbp);
 extern void hidDataTransmitted(USBDriver *usbp, usbep_t ep);
 extern  void hidDataReceived(USBDriver *usbp, usbep_t ep);
 #ifdef __cplusplus

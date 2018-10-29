@@ -30,6 +30,14 @@
 
 #include "mcuconf.h"
 
+
+/**
+ * @brief   Enables the flash subsystem.
+ */
+#if !defined(HAL_USE_FLASH) || defined(__DOXYGEN__)
+#define HAL_USE_FLASH               TRUE
+#endif
+
 /**
  * @brief   Enables the PAL subsystem.
  */

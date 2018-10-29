@@ -1,10 +1,10 @@
-#include "hal.h"
 #include "ch.h"
+#include "hal.h"
 #include "shell.h"
 
+#include "cmd.h"
 #include "usb_hid.h"
 #include "usbcfg.h"
-#include "shell_cmd.h"
 #include "ems22a.h"
 #include "mlx90393.h"
 #include "lsm303.h"
@@ -25,10 +25,12 @@ static const I2CConfig i2cconfig = {
 };
 
 static const SPIConfig spicfg = {
+    false,
     NULL,
     GPIOA,
     GPIOA_SPI1NSS,
     SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0 | SPI_CR1_CPOL | SPI_CR1_DFF,
+    0
 };
 
 typedef struct {
@@ -50,9 +52,13 @@ typedef enum {
 
 
 #define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
+
 static const ShellCommand commands[] = {
-  {"mem", cmd_mem},
-  {"threads", cmd_threads},
+  {"flashwrite", cmd_flashwrite},
+  {"flashread", cmd_flashread},
+  {"flashdump", cmd_flashdump},
+  {"flashinfo", cmd_flashinfo},
+  {"reset", cmd_reset},
   {NULL, NULL}
 };
 
@@ -288,9 +294,6 @@ int main(void) {
     spiStart(&SPID1, &spicfg);
     usb_init();
 
-    chprintf((BaseSequentialStream *)&SDU1, "Sleeping for 5 seconds");
-    chThdSleepMilliseconds(5000);
-
     //chThdCreateStatic(mlx90393_thread_wa, sizeof(mlx90393_thread_wa), NORMALPRIO + 4, mlx90393_thread, NULL);
     chThdCreateStatic(lsm303c_thread_wa, sizeof(lsm303c_thread_wa), NORMALPRIO + 3, lsm303c_thread, NULL);
     //chThdCreateStatic(lsm303dlhc_thread_wa, sizeof(lsm303dlhc_thread_wa), NORMALPRIO + 2, lsm303dlhc_thread, NULL);
@@ -300,11 +303,12 @@ int main(void) {
 
     while(1) {
         // chprintf((BaseSequentialStream *)&SDU1, "Idle");
-#if 0
         if (!shelltp) {
             if (SDU1.config->usbp->state == USB_ACTIVE) {
                 /* Spawns a new shell.*/
-                shelltp = shellCreate(&shell_cfg1, SHELL_WA_SIZE, NORMALPRIO);
+                shelltp = chThdCreateFromHeap(NULL, SHELL_WA_SIZE,
+                                            "shell", NORMALPRIO + 1,
+                                            shellThread, (void *)&shell_cfg1);
             }
         } else {
             /* If the previous shell exited.*/
@@ -314,7 +318,6 @@ int main(void) {
                 shelltp = NULL;
             }
         }
-#endif // 0
         chThdSleepMilliseconds(5);
     }
     return 0;

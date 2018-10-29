@@ -45,7 +45,7 @@ void hid_transmit(USBDriver *usbp)
     chSysUnlockFromISR();
 }
 
-bool_t hidRequestsHook(USBDriver *usbp)
+bool hidRequestsHook(USBDriver *usbp)
 {
     const USBDescriptor *dp;
     if ((usbp->setup[0] & (USB_RTYPE_TYPE_MASK | USB_RTYPE_RECIPIENT_MASK)) ==

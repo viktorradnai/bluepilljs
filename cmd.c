@@ -1,39 +1,121 @@
 #include "hal.h"
 #include "ch.h"
 #include "chprintf.h"
+#include "hal_flash_lld.h"
 
-#define SHELL_NEWLINE_STR "\n"
-static void cmd_mem(BaseSequentialStream *chp, int argc, char *argv[]) {
-  size_t n, total, largest;
+#define FLASH_END 0x20000
+#define CALDATA_SECTOR flashGetDescriptor((BaseFlash *) &FD1)->sectors_count - 1
+#define CALDATA_ADDR   flashGetSectorOffset((BaseFlash *) &FD1, (flash_sector_t) CALDATA_SECTOR);
 
-  (void)argv;
-  if (argc > 0) {
-    shellUsage(chp, "mem");
-    return;
-  }
-  n = chHeapStatus(NULL, &total, &largest);
-  chprintf(chp, "core free memory : %u bytes" SHELL_NEWLINE_STR, chCoreGetStatusX());
-  chprintf(chp, "heap fragments   : %u" SHELL_NEWLINE_STR, n);
-  chprintf(chp, "heap free total  : %u bytes" SHELL_NEWLINE_STR, total);
-  chprintf(chp, "heap free largest: %u bytes" SHELL_NEWLINE_STR, largest);
+extern FlashDriver FD1;
+
+void cmd_reset(BaseSequentialStream *chp, int argc, char *argv[]) {
+    (void)argv;
+    if (argc > 0) {
+        chprintf(chp, "Usage: reset\r\n");
+        return;
+    }
+
+    chprintf(chp, "Will reset in 200ms\r\n");
+    chThdSleepMilliseconds(200);
+    NVIC_SystemReset();
 }
 
-void cmd_threads(BaseSequentialStream *chp, int argc, char *argv[]) {
-  static const char *states[] = {CH_STATE_NAMES};
-  thread_t *tp;
+void cmd_flashwrite(BaseSequentialStream *chp, int argc, char *argv[]) {
+    (void)argv;
+    flash_error_t err;
+    flash_offset_t addr = CALDATA_ADDR;
+    char pattern[] = "Hello Flash!";
 
-  (void)argv;
-  if (argc > 0) {
-    chprintf(chp, "Usage: threads\r\n");
-    return;
-  }
-  chprintf(chp, "    addr    stack prio refs     state\r\n");
-  tp = chRegFirstThread();
-  do {
-    chprintf(chp, "%08lx %08lx %4lu %4lu %9s\r\n",
-             (uint32_t)tp, (uint32_t)tp->p_ctx.r13,
-             (uint32_t)tp->p_prio, (uint32_t)(tp->p_refs - 1),
-             states[tp->p_state]);
-    tp = chRegNextThread(tp);
-  } while (tp != NULL);
+    if (argc > 0) {
+        chprintf(chp, "Usage: flashread\r\n");
+        return;
+    }
+
+    chprintf(chp, "Will write in 1s\r\n");
+    chThdSleepMilliseconds(1000);
+    err = flashStartEraseSector(&FD1, CALDATA_SECTOR);
+    if(err != FLASH_NO_ERROR) {
+        chprintf(chp, "Error erasing flash: %d\r\n", err);
+        return;
+    }
+    err = flashWaitErase((BaseFlash *)&FD1);
+    if(err != FLASH_NO_ERROR) {
+        chprintf(chp, "Error waiting for flash erase: %d\r\n", err);
+        return;
+    }
+    err = flashProgram(&FD1, addr, sizeof(pattern), (uint8_t *) pattern);
+    if(err != FLASH_NO_ERROR) {
+        chprintf(chp, "Error writing flash: %d\r\n", err);
+        return;
+    }
+    chprintf(chp, "Flash written\r\n");
+}
+
+void cmd_flashread(BaseSequentialStream *chp, int argc, char *argv[]) {
+    (void)argv;
+    flash_error_t err;
+    flash_offset_t addr = CALDATA_ADDR;
+    uint8_t buffer[128];
+    uint8_t i;
+
+    if (argc > 0) {
+        chprintf(chp, "Usage: flashread\r\n");
+        return;
+    }
+
+    chprintf(chp, "Will read in 1s\r\n");
+    chThdSleepMilliseconds(1000);
+    err = flashRead(&FD1, addr, 128, buffer);
+    if(err != FLASH_NO_ERROR) {
+        chprintf(chp, "Error reading flash: %d\r\n", err);
+    }
+
+    chprintf(chp, "Addr: %x, data: ", addr, buffer);
+    for(i=0; i<128; i++) {
+        chprintf(chp, "%c", buffer[i]);
+    }
+    chprintf(chp, "\r\n");
+    chprintf(chp, "%s\r\n", (char *) addr);
+}
+
+void cmd_flashinfo(BaseSequentialStream *chp, int argc, char *argv[]) {
+    (void)argv;
+    const flash_descriptor_t *fd = flashGetDescriptor(&FD1);
+
+    if (argc > 0) {
+        chprintf(chp, "Usage: flashinfo\r\n");
+        return;
+    }
+
+    chprintf(chp, "Flash address: %x, sector count: %d, sector size: %x\r\n", fd->address, fd->sectors_count, fd->sectors_size);
+    chprintf(chp, "Flash offset: %x, sector size: %x\r\n", flashGetSectorOffset(&FD1, 0), flashGetSectorSize(&FD1, 0));
+    flash_offset_t last_sector = flashGetSectorOffset((BaseFlash *) &FD1, fd->sectors_count - 1);
+    chprintf(chp, "Cal data sector: %x, cal data address: %x\r\n", last_sector / fd->sectors_size, last_sector);
+}
+
+void cmd_flashdump(BaseSequentialStream *chp, int argc, char *argv[]) {
+    (void)argv;
+    flash_error_t err = FLASH_NO_ERROR;
+    flash_offset_t addr = 0;
+    uint8_t buffer[2048];
+    uint8_t i;
+
+    if (argc > 0) {
+        chprintf(chp, "Usage: flashread\r\n");
+        return;
+    }
+
+    chprintf(chp, "Will read in 1s\r\n");
+    chThdSleepMilliseconds(1000);
+    while(err == FLASH_NO_ERROR && addr < FLASH_END) {
+        err = flashRead(&FD1, addr, 128, buffer);
+        chprintf(chp, "Addr: %x, data: ", addr, buffer);
+        for(i=0; i<128; i++) {
+            chprintf(chp, "%c", buffer[i]);
+        }
+        chprintf(chp, "\r\n");
+        chThdSleepMilliseconds(100);
+        addr += 128;
+    }
 }
