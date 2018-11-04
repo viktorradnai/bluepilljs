@@ -7,6 +7,8 @@
 #define MLX90393_CMD_MEASURE_XYZ 0x3E
 #define MLX90393_CMD_READ_XYZ 0x4E
 
+
+// Enables (1) or disables (0) the on-chip sensitivity drift compensation.
 #define MLX90393_TCMP_EN 0
 
 

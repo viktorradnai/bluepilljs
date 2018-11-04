@@ -40,6 +40,10 @@ bool_t mlx90393_read(int16_t* data)
     if (!i2c_write(&I2CD1, MLX90393_I2C_ADDR, out2, sizeof(out2), in, sizeof(in))) return FALSE;
 
 #if MLX90393_TCMP_EN
+    /*
+     * Enabling the temperature compensation changes the way the magnetic values
+     * are encoded and transmitted so conversion is necessary
+     */
     int32_t tmp;
     tmp = (in[3] << 8) | in[2];
     data[0] = (int16_t) (tmp - 32768);

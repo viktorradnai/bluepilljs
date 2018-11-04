@@ -1,14 +1,4 @@
 /*
-    USB-HID Gamepad for ChibiOS/RT
-    Copyright (C) 2014, +inf Wenzheng Xu.
-
-    EMAIL: wx330@nyu.edu
-
-    This piece of code is FREE SOFTWARE and is released
-    under the Apache License, Version 2.0 (the "License");
-*/
-
-/*
     ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
