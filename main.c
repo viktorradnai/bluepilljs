@@ -92,13 +92,13 @@ static THD_FUNCTION(mlx90393_thread, arg)
 
     chRegSetThreadName("MLX90393 thread");
 
-    if(!mlx90393_init()) {
+    if(!mlx90393_init(&I2CD1)) {
         printf("MLX90393 not found\r\n");
         chThdExit(0);
     }
 
     while(1) {
-        mlx90393_read(data);
+        mlx90393_read(&I2CD1, data);
 
         //buf[0] = (buf[0] * 7 + data[0]) / 8;
         //buf[1] = (buf[1] * 7 + data[1]) / 8;
@@ -242,7 +242,6 @@ int main(void) {
     //chThdCreateStatic(lsm303dlhc_thread_wa, sizeof(lsm303dlhc_thread_wa), NORMALPRIO + 2, lsm303dlhc_thread, NULL);
     //chThdCreateStatic(dummy_thread_wa, sizeof(dummy_thread_wa), NORMALPRIO + 1, dummy_thread, NULL);
     //chThdCreateStatic(ems22a_thread_wa, sizeof(ems22a_thread_wa), NORMALPRIO + 1, ems22a_thread, NULL);
-
 
     while(1) {
         // chprintf((BaseSequentialStream *)&SDU1, "Idle");
