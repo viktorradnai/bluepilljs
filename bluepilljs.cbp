@@ -76,6 +76,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="i2c_util.h" />
+		<Unit filename="joystick.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="joystick.h" />
 		<Unit filename="lsm303.c">
 			<Option compilerVar="CC" />
 		</Unit>

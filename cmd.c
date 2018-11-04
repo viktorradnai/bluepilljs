@@ -3,9 +3,11 @@
 #include "chprintf.h"
 #include "hal_flash_lld.h"
 
+#include "usb_hid.h"
+
 #define FLASH_END 0x20000
-#define CALDATA_SECTOR flashGetDescriptor((BaseFlash *) &FD1)->sectors_count - 1
-#define CALDATA_ADDR   flashGetSectorOffset((BaseFlash *) &FD1, (flash_sector_t) CALDATA_SECTOR);
+#define CALDATA_SECTOR (flashGetDescriptor((BaseFlash *) &FD1)->sectors_count - 1)
+#define CALDATA_ADDR   (flashGetSectorOffset((BaseFlash *) &FD1, (flash_sector_t) CALDATA_SECTOR));
 
 extern FlashDriver FD1;
 
@@ -19,6 +21,20 @@ void cmd_reset(BaseSequentialStream *chp, int argc, char *argv[]) {
     chprintf(chp, "Will reset in 200ms\r\n");
     chThdSleepMilliseconds(200);
     NVIC_SystemReset();
+}
+
+void cmd_calibrate(BaseSequentialStream *chp, int argc, char *argv[]) {
+    (void)argv;
+    if (argc > 0) {
+        chprintf(chp, "Usage: cal\r\n");
+    return;
+    }
+
+    while (chnGetTimeout((BaseChannel *)chp, TIME_IMMEDIATE) == Q_TIMEOUT) {
+        chprintf(chp, "%d", hid_in_data.x);
+        chThdSleepMilliseconds(200);
+    }
+    chprintf(chp, "\r\nDone\r\n");
 }
 
 void cmd_flashwrite(BaseSequentialStream *chp, int argc, char *argv[]) {
@@ -89,7 +105,7 @@ void cmd_flashinfo(BaseSequentialStream *chp, int argc, char *argv[]) {
     }
 
     chprintf(chp, "Flash address: %x, sector count: %d, sector size: %x\r\n", fd->address, fd->sectors_count, fd->sectors_size);
-    chprintf(chp, "Flash offset: %x, sector size: %x\r\n", flashGetSectorOffset(&FD1, 0), flashGetSectorSize(&FD1, 0));
+    chprintf(chp, "Flash offset: %x, sector size: %x\r\n", flashGetSectorOffset((BaseFlash *) &FD1, 0), flashGetSectorSize((BaseFlash *) &FD1, 0));
     flash_offset_t last_sector = flashGetSectorOffset((BaseFlash *) &FD1, fd->sectors_count - 1);
     chprintf(chp, "Cal data sector: %x, cal data address: %x\r\n", last_sector / fd->sectors_size, last_sector);
 }
