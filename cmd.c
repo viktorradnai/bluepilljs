@@ -2,7 +2,7 @@
 #include "ch.h"
 #include "chprintf.h"
 #include "hal_flash_lld.h"
-
+#include "joystick.h"
 #include "usb_hid.h"
 
 #define FLASH_END 0x20000
@@ -29,6 +29,11 @@ void cmd_calibrate(BaseSequentialStream *chp, int argc, char *argv[]) {
         chprintf(chp, "Usage: cal\r\n");
     return;
     }
+
+    // chThdCreateFromHeap(NULL, 512, "lsm303c_thread", NORMALPRIO + 2, lsm303c_thread, &I2CD1);
+    chThdCreateFromHeap(NULL, 512, "lsm303dlhc_thread", NORMALPRIO + 2, lsm303dlhc_thread, &I2CD1);
+    // chThdCreateFromHeap(NULL, 512, "mlx90393_thread", NORMALPRIO + 2, mlx90393_thread, &I2CD1);
+    // chThdCreateFromHeap(NULL, 512, "ems22a_thread", NORMALPRIO + 1, ems22a_thread, NULL);
 
     while (chnGetTimeout((BaseChannel *)chp, TIME_IMMEDIATE) == Q_TIMEOUT) {
         chprintf(chp, "%d", hid_in_data.x);

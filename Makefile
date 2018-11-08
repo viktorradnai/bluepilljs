@@ -4,7 +4,7 @@
 #
 
 # En/disable usage of maplemini bootloader support
-USE_MAPLEMINI_BOOTLOADER ?= 1
+USE_MAPLEMINI_BOOTLOADER ?= 0
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
@@ -239,6 +239,6 @@ ifeq ($(USE_MAPLEMINI_BOOTLOADER),1)
 	dfu-util -a1 -d 1eaf:0003 -D build/$(PROJECT).bin -R
 else
 	st-flash erase
-	st-flash write build/$(PROJECT).bin 0x8000000
+	st-flash --flash=128k write build/$(PROJECT).bin 0x8000000
 endif
 	echo "Done"
