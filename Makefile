@@ -4,7 +4,7 @@
 #
 
 # En/disable usage of maplemini bootloader support
-USE_MAPLEMINI_BOOTLOADER ?= 0
+USE_MAPLEMINI_BOOTLOADER ?= 1
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
@@ -208,7 +208,7 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+UDEFS = -DCHPRINTF_USE_FLOAT=1
 ifeq ($(USE_MAPLEMINI_BOOTLOADER),1)
   UDEFS += -DCORTEX_VTOR_INIT=0x5000
 endif

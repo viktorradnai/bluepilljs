@@ -29,24 +29,6 @@ static const SPIConfig spicfg = {
     0
 };
 
-typedef struct {
-    float offset;
-    float min;
-    float max;
-    float m1;
-    float m2;
-} cal_data_t;
-
-cal_data_t cal_data = { 0.0, -127.0, 128.0, 1, 1 };
-
-typedef enum {
-    JSCAL_OFF = 0,
-    JSCAL_START,
-    JSCAL_ON,
-    JSCAL_END
-} js_state_t;
-
-
 #define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
 
 static const ShellCommand commands[] = {
@@ -94,7 +76,11 @@ int main(void) {
     spiStart(&SPID1, &spicfg);
     usb_init();
 
-    //chThdCreateStatic(dummy_thread_wa, sizeof(dummy_thread_wa), NORMALPRIO + 1, dummy_thread, NULL);
+    chThdCreateFromHeap(NULL, 512, "lsm303c_thread", NORMALPRIO + 2, lsm303c_thread, &I2CD1);
+    // chThdCreateFromHeap(NULL, 512, "lsm303dlhc_thread", NORMALPRIO + 2, lsm303dlhc_thread, &I2CD1);
+    // chThdCreateFromHeap(NULL, 512, "mlx90393_thread", NORMALPRIO + 2, mlx90393_thread, &I2CD1);
+    // chThdCreateFromHeap(NULL, 512, "ems22a_thread", NORMALPRIO + 1, ems22a_thread, NULL);
+    // chThdCreateStatic(NULL, 512, "dummy_thread", NORMALPRIO + 1, dummy_thread, NULL);
 
     while(1) {
         // chprintf((BaseSequentialStream *)&SDU1, "Idle");

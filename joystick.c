@@ -7,60 +7,112 @@
 #include "ems22a.h"
 #include "mlx90393.h"
 #include "lsm303.h"
+#include "joystick.h"
 
+typedef enum {
+    JSCAL_OFF = 0,
+    // JSCAL_START,
+    JSCAL_ON,
+    JSCAL_END
+} js_state_t;
 
-#if 0
-static void calibrate(float hdg) {
-    static uint8_t state = JSCAL_OFF;
-    bool_t cal_switch = palReadPad(GPIOB, 11);
+typedef struct {
+    int8_t min;
+    int8_t max;
+    int8_t offset;
+} cal_state;
+
+bool_t jscal_switch = 0;
+cal_data_t cal_data = { 0.0, 1, 1 };
+
+float normalise(float val, float offset)
+{
+    float res = val + offset;
+    if (res < -128.0) res += 256;
+    if (res > 128.0) res -= 256;
+
+    return res;
+}
+
+inline float prevent_wraparound(float v, cal_state *c)
+{
+    if(v < -96) { // adjust offset up
+        c->offset += 64;
+        c->min += 64;
+        c->max += 64;
+        v += 64;
+    } else if(v > 96) { // adjust offset down
+        c->offset -= 64;
+        c->min -= 64;
+        c->max -= 64;
+        v -= 64;
+    }
+    return v;
+}
+
+inline static void calibrate(float val) {
+    static js_state_t state = JSCAL_OFF;
+    static cal_state cs = { 0, 0, 0 };
+    // bool_t jscal_switch = palReadPad(GPIOB, 11);
+    val = prevent_wraparound(normalise(val, cs.offset), &cs);
 
     switch(state) {
         case JSCAL_OFF:
-            if (cal_switch) state = JSCAL_START;
-            break;
-        case JSCAL_START:
-            palSetPad(GPIOC, GPIOC_LED);
-            cal_data.offset = -hdg;
-            cal_data.min = hdg;
-            cal_data.max = hdg;
+            if (!jscal_switch) return;
+            palClearPad(GPIOC, GPIOC_LED);
+            cs.min = cs.max = val;
+            cs.offset = 0;
             state = JSCAL_ON;
             break;
         case JSCAL_ON:
-            if (!cal_switch) state = JSCAL_END;
-            if (cal_data.min > hdg) cal_data.min = hdg;
-            if (cal_data.max < hdg) cal_data.max = hdg;
-
-            cal_data.m1 = 128 / cal_data.min;
-            cal_data.m2 = 128 / cal_data.max;
+            if (!jscal_switch) state = JSCAL_END;
+            if (cs.min > val) cs.min = val;
+            if (cs.max < val) cs.max = val;
             break;
         case JSCAL_END:
-            palClearPad(GPIOC, GPIOC_LED);
+            palSetPad(GPIOC, GPIOC_LED);
+            cal_data.offset = cs.offset - val;
+            cal_data.m_neg = -128 / (cs.min - val);
+            cal_data.m_pos = 128 / (cs.max - val);
+            cs.min = cs.max = cs.offset = 0;
             state = JSCAL_OFF;
             break;
     }
 }
-#endif
+
+inline static uint8_t read_buttons(void)
+{
+    uint16_t btns = palReadPort(GPIOA);
+    return (uint8_t)((~btns) & 0xFF);
+}
 
 float xy_to_hdg(float x, float y)
 {
     float hdg = (atan2f(y, x) / M_PI);
     if (hdg < -1) hdg += 2;
     if (hdg > 1) hdg -= 2;
-    hdg *= 128;
+    hdg *= -128;
 
-    //calibrate(hdg);
-    //hdg += cal_data.offset;
-    //if (hdg > 0) hdg *= cal_data.m2;
-    //else hdg *= cal_data.m1;
-    if (hdg > 128) hdg = 128;
-    else if (hdg < -127) hdg = -127;
     return hdg;
 }
 
-uint8_t read_buttons(void)
+inline static float apply_cal(float val)
 {
-    uint16_t btns = palReadPort(GPIOA);
-    return (uint8_t)((~btns) & 0xFF);
+    val = normalise(val, cal_data.offset);
+    if(val < 0) val *= cal_data.m_neg;
+    else val *= cal_data.m_pos;
+    if(val < -128) val = -128;
+    else if(val > 127) val = 127;
+    return val;
+}
+
+void transmit(float hdg)
+{
+    calibrate(hdg);
+    hdg = apply_cal(hdg);
+    hid_in_data.x = (int8_t) hdg;
+    hid_in_data.button = read_buttons();
+    hid_transmit(&USBD1);
 }
 
 THD_FUNCTION(lsm303c_thread, arg)
@@ -68,7 +120,6 @@ THD_FUNCTION(lsm303c_thread, arg)
     I2CDriver *device = (I2CDriver *) arg;
     int16_t data[3];
     int16_t buf[3] = { 0, 0, 0 };
-    float hdg = 0;
 
     chRegSetThreadName("LSM303C thread");
     if(!lsm303c_init(device)) {
@@ -82,13 +133,8 @@ THD_FUNCTION(lsm303c_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        printf(">L303C %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
-        continue;
-
-        hdg = xy_to_hdg(buf[0], buf[1]);
-        hid_in_data.x = (int8_t) hdg;
-        hid_in_data.button = read_buttons();
-        hid_transmit(&USBD1);
+        // printf(">L303C %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
+        transmit(xy_to_hdg(buf[0], buf[1]));
     }
 }
 
@@ -97,11 +143,8 @@ THD_FUNCTION(lsm303dlhc_thread, arg)
     I2CDriver *device = (I2CDriver *) arg;
     int16_t data[3];
     int16_t buf[3] = { 0, 0, 0 };
-    float hdg = 0;
-    int16_t ctr = 0;
 
     chRegSetThreadName("LSM303DLHC thread");
-
     if(!lsm303dlhc_init(device)) {
         printf("LSM303DLHC not found\r\n");
         chRegSetThreadName("LSM303DLHC fail");
@@ -113,14 +156,8 @@ THD_FUNCTION(lsm303dlhc_thread, arg)
         buf[0] = (buf[0] * 7 + data[0]) / 8;
         buf[1] = (buf[1] * 7 + data[1]) / 8;
 
-        if(!ctr) printf(">L303Dx %05d %05d %05d\r\n", data[0], data[1], data[2]);
-        ctr++;
-        // continue;
-
-        hdg = xy_to_hdg(buf[0], buf[1]);
-        hid_in_data.x = (int8_t) hdg;
-        hid_in_data.button = read_buttons();
-        hid_transmit(&USBD1);
+        // printf(">L303Dx %05d %05d %05d\r\n", buf[0], buf[1], buf[2]);
+        transmit(xy_to_hdg(buf[0], buf[1]));
     }
 }
 
@@ -128,11 +165,8 @@ THD_FUNCTION(mlx90393_thread, arg)
 {
     (void)arg;
     int16_t data[3];
-    //int16_t buf[3] = { 0, 0, 0 };
-    float hdg = 0;
 
     chRegSetThreadName("MLX90393 thread");
-
     if(!mlx90393_init(&I2CD1)) {
         printf("MLX90393 not found\r\n");
         chRegSetThreadName("MLX90393 fail");
@@ -141,17 +175,8 @@ THD_FUNCTION(mlx90393_thread, arg)
 
     while(1) {
         mlx90393_read(&I2CD1, data);
-
-        //buf[0] = (buf[0] * 7 + data[0]) / 8;
-        //buf[1] = (buf[1] * 7 + data[1]) / 8;
-
         // printf("ML393 %05d %05d %05d\r\n", data[0], data[1], data[2]);
-        continue;
-
-        hdg = xy_to_hdg(data[0], data[1]);
-        hid_in_data.x = (int8_t) hdg;
-        hid_in_data.button = read_buttons();
-        hid_transmit(&USBD1);
+        transmit(xy_to_hdg(data[0], data[1]));
     }
 }
 
@@ -162,18 +187,13 @@ THD_FUNCTION(dummy_thread, arg)
     int8_t add = 1;
 
     chRegSetThreadName("Dummy thread");
-
     while(1) {
         if (hdg == 127) add = -1;
         if (hdg == -128) add = 1;
 
         hdg += add;
         printf(">DUMMY %05d %05d\r\n", hdg, add);
-
-        hid_in_data.x = (int8_t) hdg;
-        hid_in_data.button = read_buttons();
-        hid_transmit(&USBD1);
-
+        transmit(hdg);
         chThdSleepMilliseconds(10);
     }
 }
@@ -190,6 +210,7 @@ THD_FUNCTION(ems22a_thread, arg)
     chRegSetThreadName("EMS22A thread");
     while (1) {
         ems22a_receive(rxbuf, EMS22A_CHAIN_LEN);
+        float hdg;
 
         for (uint8_t i = 0; i < EMS22A_CHAIN_LEN; i++) {
            if (rxbuf[i].data.cordic_oflow | rxbuf[i].data.linearity_alarm | rxbuf[i].data.mag_increase | rxbuf[i].data.mag_decrease | rxbuf[i].data.parity) {
@@ -200,6 +221,8 @@ THD_FUNCTION(ems22a_thread, arg)
             } else {
 
                 printf(">E22A%d %04d\r\n", i, rxbuf[i].data.value);
+                hdg = ((float) rxbuf[i].data.value) / 4 - 128;
+                transmit(hdg);
             }
         }
         chThdSleepMilliseconds(10);

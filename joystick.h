@@ -5,8 +5,16 @@
 #include "mlx90393.h"
 #include "lsm303.h"
 
+typedef struct {
+    float offset;
+    float m_neg;
+    float m_pos;
+} cal_data_t;
+
+extern bool_t jscal_switch;
+extern cal_data_t cal_data;
+
 float xy_to_hdg(float x, float y);
-uint8_t read_buttons(void);
 THD_FUNCTION(lsm303c_thread, arg);
 THD_FUNCTION(lsm303dlhc_thread, arg);
 THD_FUNCTION(mlx90393_thread, arg);
