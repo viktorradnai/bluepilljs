@@ -1,6 +1,5 @@
 #include "ch.h"
 #include "hal.h"
-#include "shell.h"
 #include "cmd.h"
 #include "usb_hid.h"
 #include "usbcfg.h"
@@ -13,6 +12,11 @@
 SerialUSBDriver SDU1;
 extern const USBConfig usbcfg;
 extern SerialUSBConfig serusbcfg;
+
+const ShellConfig shell_cfg1 = {
+  (BaseSequentialStream *)&SDU1,
+  commands
+};
 
 /* I2C1 config */
 static const I2CConfig i2cconfig = {
@@ -27,23 +31,6 @@ static const SPIConfig spicfg = {
     GPIOA_SPI1NSS,
     SPI_CR1_BR_2 | SPI_CR1_BR_1 | SPI_CR1_BR_0 | SPI_CR1_CPOL | SPI_CR1_DFF,
     0
-};
-
-#define SHELL_WA_SIZE   THD_WORKING_AREA_SIZE(2048)
-
-static const ShellCommand commands[] = {
-  {"cal", cmd_calibrate},
-  {"flashwrite", cmd_flashwrite},
-  {"flashread", cmd_flashread},
-  {"flashdump", cmd_flashdump},
-  {"flashinfo", cmd_flashinfo},
-  {"reset", cmd_reset},
-  {NULL, NULL}
-};
-
-static const ShellConfig shell_cfg1 = {
-  (BaseSequentialStream *)&SDU1,
-  commands
 };
 
 void usb_init(void) {
@@ -75,6 +62,7 @@ int main(void) {
     i2cStart(&I2CD2, &i2cconfig);
     spiStart(&SPID1, &spicfg);
     usb_init();
+    cal_load();
 
     chThdCreateFromHeap(NULL, 512, "lsm303c_thread", NORMALPRIO + 2, lsm303c_thread, &I2CD1);
     // chThdCreateFromHeap(NULL, 512, "lsm303dlhc_thread", NORMALPRIO + 2, lsm303dlhc_thread, &I2CD1);

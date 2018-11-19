@@ -1,8 +1,10 @@
 #include "ch.h"
 #include "hal.h"
 #include <math.h>
+#include <string.h>
 
 #include "printf.h"
+#include "flash.h"
 #include "usb_hid.h"
 #include "ems22a.h"
 #include "mlx90393.h"
@@ -23,7 +25,8 @@ typedef struct {
 } cal_state;
 
 bool_t jscal_switch = 0;
-cal_data_t cal_data = { 0.0, 1, 1 };
+cal_frame_t cal_frame = {{ "CAL", { 0.0, 1, 1 }, "END" }};
+cal_data_t *cal_data = &cal_frame.content.data;
 
 float normalise(float val, float offset)
 {
@@ -71,9 +74,9 @@ inline static void calibrate(float val) {
             break;
         case JSCAL_END:
             palSetPad(GPIOC, GPIOC_LED);
-            cal_data.offset = cs.offset - val;
-            cal_data.m_neg = -128 / (cs.min - val);
-            cal_data.m_pos = 128 / (cs.max - val);
+            cal_data->offset = cs.offset - val;
+            cal_data->m_neg = -128 / (cs.min - val);
+            cal_data->m_pos = 128 / (cs.max - val);
             cs.min = cs.max = cs.offset = 0;
             state = JSCAL_OFF;
             break;
@@ -86,7 +89,7 @@ inline static uint8_t read_buttons(void)
     return (uint8_t)((~btns) & 0xFF);
 }
 
-float xy_to_hdg(float x, float y)
+static float xy_to_hdg(float x, float y)
 {
     float hdg = (atan2f(y, x) / M_PI);
     if (hdg < -1) hdg += 2;
@@ -96,11 +99,27 @@ float xy_to_hdg(float x, float y)
     return hdg;
 }
 
-inline static float apply_cal(float val)
+bool cal_load(void) {
+    BaseSequentialStream *chp = (BaseSequentialStream *)&SDU1;
+    cal_frame_t buffer;
+    if (!flash_read(buffer.stream, sizeof(buffer.stream))) return false;
+
+    if (strncmp(buffer.content.start, "CAL", 4) || strncmp(buffer.content.end, "END", 4)) {
+        printf("ERROR: Calibration data markers don't match\r\n");
+        return false;
+    }
+    chprintf(chp, "M-: %f, M+: %f, offset: %f\r\n", buffer.content.data.m_neg, buffer.content.data.m_pos, buffer.content.data.offset);
+    cal_data->m_neg = buffer.content.data.m_neg;
+    cal_data->m_pos = buffer.content.data.m_pos;
+    cal_data->offset = buffer.content.data.offset;
+    return true;
+}
+
+inline static float cal_apply(float val)
 {
-    val = normalise(val, cal_data.offset);
-    if(val < 0) val *= cal_data.m_neg;
-    else val *= cal_data.m_pos;
+    val = normalise(val, cal_data->offset);
+    if(val < 0) val *= cal_data->m_neg;
+    else val *= cal_data->m_pos;
     if(val < -128) val = -128;
     else if(val > 127) val = 127;
     return val;
@@ -109,7 +128,7 @@ inline static float apply_cal(float val)
 void transmit(float hdg)
 {
     calibrate(hdg);
-    hdg = apply_cal(hdg);
+    hdg = cal_apply(hdg);
     hid_in_data.x = (int8_t) hdg;
     hid_in_data.button = read_buttons();
     hid_transmit(&USBD1);

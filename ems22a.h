@@ -8,8 +8,7 @@
 
 /* EMS22A data frame layout */
 typedef union {
-    struct
-    {
+    struct {
         uint16_t
                 parity          : 1,
                 mag_decrease    : 1,

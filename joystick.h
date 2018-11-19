@@ -11,10 +11,21 @@ typedef struct {
     float m_pos;
 } cal_data_t;
 
-extern bool_t jscal_switch;
-extern cal_data_t cal_data;
+typedef union {
+    struct {
+        char start[4];
+        cal_data_t data;
+        char end[4];
+    } content;
+    char stream[20];
+} cal_frame_t;
 
-float xy_to_hdg(float x, float y);
+extern bool_t jscal_switch;
+extern cal_data_t *cal_data;
+extern cal_frame_t cal_frame;
+
+bool cal_load(void);
+
 THD_FUNCTION(lsm303c_thread, arg);
 THD_FUNCTION(lsm303dlhc_thread, arg);
 THD_FUNCTION(mlx90393_thread, arg);

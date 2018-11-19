@@ -4,7 +4,7 @@
 #
 
 # En/disable usage of maplemini bootloader support
-USE_MAPLEMINI_BOOTLOADER ?= 1
+USE_MAPLEMINI_BOOTLOADER ?= 0
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
@@ -124,7 +124,7 @@ CSRC = $(STARTUPSRC) \
        $(TESTSRC) \
        $(STREAMSSRC) \
        $(SHELLSRC) \
-       cmd.c i2c_util.c usbcfg.c usb_hid.c joystick.c ems22a.c lsm303.c mlx90393.c main.c
+       cmd.c flash.c i2c_util.c usbcfg.c usb_hid.c joystick.c ems22a.c lsm303.c mlx90393.c main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.

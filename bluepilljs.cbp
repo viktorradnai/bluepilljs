@@ -71,6 +71,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="ems22a.h" />
+		<Unit filename="flash.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="flash.h" />
 		<Unit filename="halconf.h" />
 		<Unit filename="i2c_util.c">
 			<Option compilerVar="CC" />
