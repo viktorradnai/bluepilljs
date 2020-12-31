@@ -90,6 +90,7 @@ PROJECT = ch
 
 # Imported source files and paths
 CHIBIOS = ChibiOS
+
 # Startup files.
 include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f1xx.mk
 # HAL-OSAL files (optional).
@@ -239,6 +240,6 @@ ifeq ($(USE_MAPLEMINI_BOOTLOADER),1)
 	dfu-util -a1 -d 1eaf:0003 -D build/$(PROJECT).bin -R
 else
 	st-flash erase
-	st-flash --flash=128k write build/$(PROJECT).bin 0x8000000
+	st-flash write build/$(PROJECT).bin 0x8000000
 endif
 	echo "Done"
