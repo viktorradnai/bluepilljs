@@ -134,7 +134,7 @@ typedef enum {
 } hid_usb_state_t;
 
 typedef struct {
-    int8_t x;
+    int8_t x; int8_t y; int8_t z;
     uint8_t button;
 } hid_data;
 
@@ -166,5 +166,3 @@ extern  void hidDataReceived(USBDriver *usbp, usbep_t ep);
 
 
 #endif /* _USB_HID_H_ */
-
-

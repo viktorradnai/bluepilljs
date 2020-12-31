@@ -11,6 +11,12 @@
 #include "lsm303.h"
 #include "joystick.h"
 
+
+#define JS_MAX  127
+#define JS_MIN -128
+ // brake application starts when the rudder is deflected this far from the limit
+#define JS_BRAKEPOINT 32
+
 typedef enum {
     JSCAL_OFF = 0,
     // JSCAL_START,
@@ -115,22 +121,43 @@ bool cal_load(void) {
     return true;
 }
 
-inline static float cal_apply(float val)
-{
-    val = normalise(val, cal_data->offset);
-    if(val < 0) val *= cal_data->m_neg;
-    else val *= cal_data->m_pos;
+static float limit(float val) {
     if(val < -128) val = -128;
     else if(val > 127) val = 127;
     return val;
 }
 
+inline static float cal_apply(float val)
+{
+    val = normalise(val, cal_data->offset);
+    if(val < 0) val *= cal_data->m_neg;
+    else val *= cal_data->m_pos;
+    return limit(val);
+}
+
 void transmit(float hdg)
 {
+#define JS_BRAKEPOINT_POS (JS_MAX - JS_BRAKEPOINT)
+#define JS_BRAKEPOINT_NEG (JS_MIN + JS_BRAKEPOINT)
+// ratio of remaining rudder range from brake point to total rudder range. Used for calculating the brake axis value.
+#define JS_BRAKE_RATIO (256 / JS_BRAKEPOINT)
+
+    float brake_pos = JS_MIN, brake_neg = JS_MIN;
+
     calibrate(hdg);
     hdg = cal_apply(hdg);
+
+    if (hdg < JS_BRAKEPOINT_NEG) {
+        brake_neg = (-hdg + JS_BRAKEPOINT_NEG) * JS_BRAKE_RATIO + JS_MIN;
+    } else if (hdg > JS_BRAKEPOINT_POS) {
+        brake_pos = (hdg - JS_BRAKEPOINT_POS) * JS_BRAKE_RATIO + JS_MIN;
+    }
+
     hid_in_data.x = (int8_t) hdg;
+    hid_in_data.y = (int8_t) limit(brake_neg);
+    hid_in_data.z = (int8_t) limit(brake_pos);
     hid_in_data.button = read_buttons();
+
     hid_transmit(&USBD1);
 }
 

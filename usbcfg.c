@@ -58,11 +58,12 @@ static const uint8_t hid_generic_joystick_reporter_data[] = {
         HID_COLLECTION          (HID_COLLECTION_PHYSICAL),
             HID_USAGE_PAGE      (HID_USAGE_PAGE_GENERIC_DESKTOP),
             HID_USAGE           (HID_USAGE_X),
-            // HID_USAGE               (HID_USAGE_Y),
+            HID_USAGE           (HID_USAGE_Y),
+            HID_USAGE           (HID_USAGE_Z),
             HID_LOGICAL_MINIMUM     (-127),
             HID_LOGICAL_MAXIMUM     (127),
             HID_REPORT_SIZE         (8),
-            HID_REPORT_COUNT        (1),
+            HID_REPORT_COUNT        (3),
             HID_INPUT       (HID_INPUT_DATA_VAR_ABS),
             HID_USAGE_PAGE(HID_USAGE_PAGE_BUTTON),
             HID_USAGE_MINIMUM(HID_USAGE_BUTTON1),
@@ -427,4 +428,3 @@ const SerialUSBConfig serusbcfg = {
     USBD1_DATA_AVAILABLE_EP,
     USBD1_INTERRUPT_REQUEST_EP
 };
-
