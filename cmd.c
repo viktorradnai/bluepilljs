@@ -18,6 +18,12 @@ void cmd_reset(BaseSequentialStream *chp, int argc, char *argv[]) {
 
 void cmd_restart(BaseSequentialStream *chp, int argc, char *argv[])
 {
+    (void)argv;
+    if (argc > 0) {
+        chprintf(chp, "Usage: cal\r\n");
+        return;
+    }
+
     chThdCreateFromHeap(NULL, 512, "lsm303c_thread", NORMALPRIO + 2, lsm303c_thread, &I2CD1);
 }
 
@@ -135,4 +141,17 @@ void cmd_flashinfo(BaseSequentialStream *chp, int argc, char *argv[]) {
     flash_offset_t flash_end = flashGetSectorOffset((BaseFlash *) &FD1, fd->sectors_count);
     chprintf(chp, "Cal data sector: %x, cal data address: %x\r\n", last_sector / fd->sectors_size, last_sector);
     chprintf(chp, "Sector limit: %x, address limit: %x\r\n", flash_end / fd->sectors_size, flash_end);
+}
+
+void cmd_status(BaseSequentialStream *chp, int argc, char *argv[]) {
+    (void)argv;
+    if (argc > 0) {
+        chprintf(chp, "Usage: status\r\n");
+        return;
+    }
+
+    while (chnGetTimeout((BaseChannel *)chp, TIME_IMMEDIATE) == Q_TIMEOUT) {
+        chprintf(chp, "X: %d\tY: %d\tZ: %d\r\n", hid_in_data.x, hid_in_data.y, hid_in_data.z);
+        chThdSleepMilliseconds(500);
+    }
 }

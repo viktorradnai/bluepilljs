@@ -6,6 +6,7 @@
 
 void cmd_reset(BaseSequentialStream *chp, int argc, char *argv[]);
 void cmd_restart(BaseSequentialStream *chp, int argc, char *argv[]);
+void cmd_status(BaseSequentialStream *chp, int argc, char *argv[]);
 void cmd_calibrate(BaseSequentialStream *chp, int argc, char *argv[]);
 void cmd_cal_load(BaseSequentialStream *chp, int argc, char *argv[]);
 void cmd_cal_save(BaseSequentialStream *chp, int argc, char *argv[]);
@@ -26,6 +27,7 @@ const ShellCommand commands[] = {
   {"flashinfo", cmd_flashinfo},
   {"reset", cmd_reset},
   {"restart", cmd_restart},
+  {"status", cmd_status},
   {NULL, NULL}
 };
 
